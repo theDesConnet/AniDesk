@@ -99,7 +99,7 @@
                     {/if}
                 {/if}
             </div>
-            <div class="comment-author-date flex-row">{utils.returnTimeString(comment.timestamp)}</div>
+            <div class="comment-author-date flex-row">{utils.returnTimeString(comment.timestamp * 1000)}</div>
             <BaseMainButton
                 customClasses="comment-reply-button"
                 borderRadius={6}

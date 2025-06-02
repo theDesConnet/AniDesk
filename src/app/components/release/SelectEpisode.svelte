@@ -162,13 +162,18 @@
                             break;
 
                         case "Sibnet":
-                            avaliableQuality = {
-                                "720": {
-                                    src: await Sibnet.Parse(
-                                        d.url,
-                                    ),
-                                },
-                            };
+                            await utils.fallback(async (success) => {
+                                const link = await Sibnet.Parse(d.url);
+                                if (!link) return;
+
+                                avaliableQuality = {
+                                    "720": {
+                                        src: link,
+                                    },
+                                };
+
+                                success = true;
+                            }, 3);
                             break;
                     }
 

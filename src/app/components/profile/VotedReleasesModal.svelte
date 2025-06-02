@@ -69,7 +69,7 @@
     }
 
     .info-box {
-        background-color: var(--background-color);
+        background-color: var(--alt-background-color);
         margin-bottom: 10px;
         border-radius: 10px;
         width: max-content;

@@ -28,7 +28,7 @@
                             <Dot />
                             <span class="third-text"
                                 >{utils.returnTimeString(
-                                    r.last_update_date * 1000,
+                                    r.last_view_timestamp * 1000,
                                 )}</span
                             >
                         {/if}

@@ -211,5 +211,15 @@ module.exports = {
             .catch(() => {
                 return false;
             });
+    },
+
+    async fallback(callback, count) {
+        let success = false;
+
+        for (let i = 0; i < count && !success; i++) {
+            callback(success);
+            if (success) return;
+            await new Promise(r => setTimeout(r, 500));
+        }
     }
 };

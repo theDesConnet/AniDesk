@@ -75,7 +75,7 @@
         mainDiv,
         hls,
         currentEpisode,
-        currentRender;
+        startTimestamp;
 
     let progressPercent, loadedPercent;
 
@@ -113,7 +113,7 @@
 
     async function changeUpscale(enabled) {
         upscaleEnabled = enabled;
-        currentRender = await renderUpscale();
+        await renderUpscale();
     }
 
     //aspect-16-9
@@ -177,20 +177,31 @@
                 break;
 
             case "Libria":
-                const aLinks = await AniLibriaParser.getDirectLinks(
-                    episode.url,
-                );
-                avaliableQuality = aLinks.files.filter(
-                    (x) => x.id == `s${d.position}`,
-                )[0].file;
+                await utils.fallback(async (success) => {
+                    const aLinks = await AniLibriaParser.getDirectLinks(
+                        episode.url,
+                    );
+                    avaliableQuality = aLinks.files.filter(
+                        (x) => x.id == `s${episode.position}`,
+                    )[0].file;
+
+                    success = true;
+                }, 3);
                 break;
 
             case "Sibnet":
-                avaliableQuality = {
-                    "720": {
-                        src: await Sibnet.Parse(episode.url),
-                    },
-                };
+                await utils.fallback(async (success) => {
+                    const link = await Sibnet.Parse(episode.url);
+                    if (!link) return;
+
+                    avaliableQuality = {
+                        "720": {
+                            src: link,
+                        },
+                    };
+
+                    success = true;
+                }, 3);
                 break;
         }
 
@@ -243,12 +254,17 @@
             dubber: source.type.name,
         });
 
+        startTimestamp = Date.now();
+
         discordRPC.setActivity({
             type: 3,
             state: `Смотрит аниме - ${episode.name}`,
             details: args.release.title_ru.slice(0, 127),
             largeImageKey: "anidesk-transparent",
             largeImageText: "AniDesk - Anixart Client",
+            startTimestamp: startTimestamp - video.currentTime * 1000,
+            endTimestamp:
+                startTimestamp + (video.duration - video.currentTime) * 1000,
             instance: true,
             buttons: [
                 {
@@ -262,7 +278,7 @@
 
     async function renderUpscale() {
         canvas = await waitForElm(".player-canvas");
-        return await render({
+        await render({
             video,
             canvas,
             pipelineBuilder: (device, inputTexture) => {
@@ -276,21 +292,21 @@
                     height: defaultCanvasSize.height,
                 };
 
-                const mode = new upscaleModeMap[upscaleSettings.mode]({
-                    device,
-                    inputTexture,
-                    nativeDimensions,
-                    targetDimensions,
-                });
-
-                const original = new Original({
-                    device,
-                    inputTexture,
-                    nativeDimensions,
-                    targetDimensions,
-                });
-
-                return [upscaleEnabled ? mode : original];
+                return [
+                    upscaleEnabled
+                        ? new upscaleModeMap[upscaleSettings.mode]({
+                              device,
+                              inputTexture,
+                              nativeDimensions,
+                              targetDimensions,
+                          })
+                        : new Original({
+                              device,
+                              inputTexture,
+                              nativeDimensions,
+                              targetDimensions,
+                          }),
+                ];
             },
         });
     }
@@ -331,7 +347,7 @@
             video.play();
         }
 
-        if (avaliableGPU) currentRender = await renderUpscale();
+        if (avaliableGPU) await renderUpscale();
 
         args.src = url;
         args.currentQuality = quality;
@@ -356,7 +372,8 @@
         }
 
         video.volume = playerSettings.saveUserVolume.enabled
-            ? playerSettings.saveUserVolume.lastValue ?? playerSettings.defaultVolume / 100
+            ? (playerSettings.saveUserVolume.lastValue ??
+              playerSettings.defaultVolume / 100)
             : playerSettings.defaultVolume / 100;
 
         volControl = await waitForElm("#volume-position");
@@ -386,7 +403,7 @@
             loading = false;
         };
 
-        if (avaliableGPU) currentRender = await renderUpscale();
+        if (avaliableGPU) await renderUpscale();
         await video.play();
 
         window.onwheel = (e) => {
@@ -445,7 +462,9 @@
                             let e =
                                 args.episodes[
                                     args.episodes.findIndex(
-                                        (x) => x.position == currentEpisode.position,
+                                        (x) =>
+                                            x.position ==
+                                            currentEpisode.position,
                                     ) + 1
                                 ];
 
@@ -459,7 +478,9 @@
                             let p =
                                 args.episodes[
                                     args.episodes.findIndex(
-                                        (x) => x.position == currentEpisode.position,
+                                        (x) =>
+                                            x.position ==
+                                            currentEpisode.position,
                                     ) - 1
                                 ];
 
@@ -490,15 +511,60 @@
         };
 
         durationTime = utils.returnFormatedTime(video.duration);
+        startTimestamp = Date.now();
 
         video.onpause = () => {
             isPaused = true;
             loading = false;
+
+            discordRPC.setActivity({
+                type: 3,
+                state: `Смотрит аниме - ${args.currentEpisode.name}`,
+                details: args.release.title_ru.slice(0, 127),
+                largeImageKey: "anidesk-transparent",
+                largeImageText: "AniDesk - Anixart Client",
+                instance: true,
+                buttons: [
+                    {
+                        label: "Ссылка на релиз",
+                        url: `https://anixart.tv/release/${args.release.id}`,
+                    },
+                    {
+                        label: "Ссылка на клиент",
+                        url: "https://anidesk.ds1nc.ru/",
+                    },
+                ],
+            });
         };
 
         video.onplay = () => {
             isPaused = false;
             loading = false;
+
+            startTimestamp = Date.now();
+
+            discordRPC.setActivity({
+                type: 3,
+                state: `Смотрит аниме - ${args.currentEpisode.name}`,
+                details: args.release.title_ru.slice(0, 127),
+                largeImageKey: "anidesk-transparent",
+                largeImageText: "AniDesk - Anixart Client",
+                startTimestamp: startTimestamp - video.currentTime * 1000,
+                endTimestamp:
+                    startTimestamp +
+                    (video.duration - video.currentTime) * 1000,
+                instance: true,
+                buttons: [
+                    {
+                        label: "Ссылка на релиз",
+                        url: `https://anixart.tv/release/${args.release.id}`,
+                    },
+                    {
+                        label: "Ссылка на клиент",
+                        url: "https://anidesk.ds1nc.ru/",
+                    },
+                ],
+            });
         };
 
         video.onended = async () => {
@@ -539,6 +605,9 @@
             details: args.release.title_ru.slice(0, 127),
             largeImageKey: "anidesk-transparent",
             largeImageText: "AniDesk - Anixart Client",
+            startTimestamp: startTimestamp - video.currentTime * 1000,
+            endTimestamp:
+                startTimestamp + (video.duration - video.currentTime) * 1000,
             instance: true,
             buttons: [
                 {
@@ -552,6 +621,10 @@
 
     onDestroy(() => {
         //Destroy all event listeners
+        if (hls) {
+            hls.detachMedia();
+            hls.destroy();
+        }
         document.removeEventListener("mousemove", hideOnIdle);
         window.removeEventListener("resize", handleResize);
         window.onwheel = null;
@@ -563,6 +636,8 @@
         video.onloadedmetadata = null;
         video.onwaiting = null;
         video.onplaying = null;
+        video = null;
+
         volControl.oninput = null;
         clearTimeout(timeout);
     });

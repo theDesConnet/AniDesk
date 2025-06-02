@@ -33,7 +33,7 @@
     <div class="comment-message flex-column">
         {comment.message}
         <div class="footer-comment flex-row">
-            <div class="comment-author-date flex-row">{utils.returnTimeString(comment.timestamp)}</div>
+            <div class="comment-author-date flex-row">{utils.returnTimeString(comment.timestamp * 1000)}</div>
             <div class="vote-count" class:like-positive={comment.likes_count > 0} class:like-negative={comment.likes_count < 0}>{comment.likes_count}</div>
         </div>
     </div>
