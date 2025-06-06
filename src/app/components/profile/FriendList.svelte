@@ -7,7 +7,7 @@
 
 <div class="profile-friends-list">
     {#each friendsInfo.content.slice(0, 5) as friend}
-    <button class="friend-profile" on:click={() => updateViewportComponent(8, friend.id)}>
+    <button class="friend-profile" on:click={() => updateViewportComponent(9, friend.id)}>
         <ProfileAvatar src={friend.avatar} alt={friend.login} size={{width: 120, height: 120}} isOnline={friend.is_online}/>
         <div class="friend-profile-info">
             <div class="friend-profile-username">{friend.login}
@@ -20,6 +20,11 @@
                 <img height="20" width="20" src={friend.badge_url} alt={friend.badge_name} />
                 {/if}
                 {/if}
+                {#if friend.is_verified}
+                <div class="verified">                    
+                    <img height="20" width="20" src="./assets/icons/verified.svg" alt="verified" />
+                </div>
+                {/if}
             </div>
             <div class="friend-profile-status">{friend.friend_count} друзей</div>
         </div>
@@ -28,6 +33,12 @@
 </div>
 
 <style>
+    .verified {
+        display: flex;
+        align-content: center;
+        margin-left: 3px;
+    }
+
     .profile-friends-list {
         display: flex;
         flex-direction: row;

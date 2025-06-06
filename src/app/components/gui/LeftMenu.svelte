@@ -21,11 +21,15 @@
     import Settings from "../../pages/Settings.svelte";
     import Friends from "../../pages/Friends.svelte";
     import NotAvaliable from "../../pages/NotAvaliable.svelte";
+    import CollectionIcon from "../../icons/collection.svg";
+    import CollectionList from "../../pages/CollectionList.svelte";
+    import Collection from "../../pages/Collection.svelte";
 
     export const views = [
         Home,
         Bookmarks,
         Friends,
+        CollectionList,
         Discover,
         Search,
         NotAvaliable,
@@ -34,6 +38,7 @@
         Profile,
         Login,
         Player,
+        Collection
     ];
 
     export let viewportComponent = null;
@@ -102,14 +107,14 @@
 >
     <div class="top-menu-content">
         {#if !utoken}
-            {@render defaultAvatar(() => updateViewportComponent(9))}
+            {@render defaultAvatar(() => updateViewportComponent(10))}
         {:else}
             {#await myProfile}
                 {@render defaultAvatar(null)}
             {:then p}
                 <LeftMenuAvatar
                     onClickCallback={() =>
-                        updateViewportComponent(8, utoken.id)}
+                        updateViewportComponent(9, utoken.id)}
                     avatar={p.profile.avatar}
                 />
             {/await}
@@ -131,26 +136,31 @@
             viewportComponentIndex={2}
         />
         <LeftMenuButton
-            icon={DiscoverIcon}
+            icon={CollectionIcon}
             selected={viewportComponent == views[3]}
             viewportComponentIndex={3}
         />
         <LeftMenuButton
-            icon={SearchIcon}
+            icon={DiscoverIcon}
             selected={viewportComponent == views[4]}
             viewportComponentIndex={4}
+        />
+        <LeftMenuButton
+            icon={SearchIcon}
+            selected={viewportComponent == views[5]}
+            viewportComponentIndex={5}
         />
     </div>
     <div class="bottom-menu-content">
         <LeftMenuButton
             icon={NotificationIcon}
-            selected={viewportComponent == views[5]}
-            viewportComponentIndex={5}
+            selected={viewportComponent == views[6]}
+            viewportComponentIndex={6}
         />
         <LeftMenuButton
             icon={SettingsIcon}
-            selected={viewportComponent == views[6]}
-            viewportComponentIndex={6}
+            selected={viewportComponent == views[7]}
+            viewportComponentIndex={7}
         />
     </div>
 </div>

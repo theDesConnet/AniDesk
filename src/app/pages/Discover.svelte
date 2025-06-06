@@ -7,6 +7,7 @@
     import CommentOutOfRelesaeItem from "../components/elements/CommentOutOfRelesaeItem.svelte";
     import BaseModal from "../components/modal/BaseModal.svelte";
     import WatchingModal from "../components/discover/WatchingModal.svelte";
+    import MetaInfo from "../components/gui/MetaInfo.svelte";
 
     async function getDiscover() {
         return {
@@ -60,11 +61,13 @@
     }
 
     function interestingItemClick(r) {
-        updateViewportComponent(7, { id: Number(r.action) });
+        updateViewportComponent(8, { id: Number(r.action) });
     }
 </script>
 
 <svelte:window bind:outerWidth={windowWidth} bind:outerHeight={windowHeight} />
+
+<MetaInfo subTitle="Обзор" />
 
 {#await getDiscover()}
     <Preloader />

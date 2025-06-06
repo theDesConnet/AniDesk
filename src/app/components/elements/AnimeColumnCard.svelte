@@ -5,7 +5,7 @@
     export let anime;
 </script>
 
-<anime-column-card class="flex-column" onclick={() => updateViewportComponent(7, { id: anime.id })}>
+<anime-column-card class="flex-column" onclick={() => updateViewportComponent(8, { id: anime.id })}>
     <div class="full-column-anime-poster">
         <AnimePoster size={{ width: 169, height: 242 }} posterInfo={{poster: anime.image, title: anime.title}} shadow={true} borderRadius={20} posterStyle={anime.profile_list_status ?? 0}/>
     </div>

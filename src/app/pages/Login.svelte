@@ -2,6 +2,7 @@
 
 <script>
     import { localStorageWritable } from "@babichjacob/svelte-localstorage";
+    import MetaInfo from "../components/gui/MetaInfo.svelte";
     let u;
 
     const user = localStorageWritable("user_token", null);
@@ -33,6 +34,8 @@
         }
     }
 </script>
+
+<MetaInfo subTitle="Вход" />
 
 <div class="login-page">
     {#if invalidLogin}

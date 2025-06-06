@@ -9,7 +9,8 @@
     import { createEventDispatcher } from "svelte";
     const dispatch = createEventDispatcher();
 
-    let showedReply = false, spoilerView = false;
+    let showedReply = false,
+        spoilerView = false;
     let replies = [];
 
     async function getAllReplies() {
@@ -68,7 +69,7 @@
     <div class="comment-author flex-row">
         <div
             class="comment-author-image"
-            onclick={() => updateViewportComponent(8, comment.profile.id)}
+            onclick={() => updateViewportComponent(9, comment.profile.id)}
         >
             <ProfileAvatar
                 src={comment.profile.avatar}
@@ -79,7 +80,7 @@
         <div class="comment-author-info flex-row">
             <div
                 class="comment-author-username flex-row"
-                onclick={() => updateViewportComponent(8, comment.profile.id)}
+                onclick={() => updateViewportComponent(9, comment.profile.id)}
             >
                 {comment.profile.login}
                 {#if comment.profile.badge_url}
@@ -98,8 +99,20 @@
                         />
                     {/if}
                 {/if}
+                {#if comment.profile.is_verified}
+                    <div class="verified">
+                        <img
+                            height="20"
+                            width="20"
+                            src="./assets/icons/verified.svg"
+                            alt="verified"
+                        />
+                    </div>
+                {/if}
             </div>
-            <div class="comment-author-date flex-row">{utils.returnTimeString(comment.timestamp * 1000)}</div>
+            <div class="comment-author-date flex-row">
+                {utils.returnTimeString(comment.timestamp * 1000)}
+            </div>
             <BaseMainButton
                 customClasses="comment-reply-button"
                 borderRadius={6}
@@ -161,14 +174,24 @@
         <div class="comment-msg flex-column">
             <div class="comment-text flex-row">
                 {#if comment.is_spoiler && !spoilerView}
-                <button class="comment-spoiler flex-column" onclick={() => spoilerView = !spoilerView}>
-                    <div class="spoiler-text flex-column">
-                        <span>Данный комментарий содержит спойлер</span>
-                        <span class="spoiler-subtitle">Для того чтобы посмотреть комментарий, нажмите здесь</span>
-                    </div>
-                </button>
+                    <button
+                        class="comment-spoiler flex-column"
+                        onclick={() => (spoilerView = !spoilerView)}
+                    >
+                        <div class="spoiler-text flex-column">
+                            <span>Данный комментарий содержит спойлер</span>
+                            <span class="spoiler-subtitle"
+                                >Для того чтобы посмотреть комментарий, нажмите
+                                здесь</span
+                            >
+                        </div>
+                    </button>
                 {/if}
-                <span class="message-text" class:spoiler-blur={comment.is_spoiler && !spoilerView}>{comment.message}</span>
+                <span
+                    class="message-text"
+                    class:spoiler-blur={comment.is_spoiler && !spoilerView}
+                    >{comment.message}</span
+                >
             </div>
             {#if comment.reply_count > 0}
                 <button
@@ -178,7 +201,13 @@
                         replies = showedReply ? await getAllReplies() : [];
                     }}
                     ><img src="assets/icons/doubleReply.svg" alt="reply" />
-                    {showedReply ? "Скрыть" : "Показать"} {comment.reply_count} {utils.getNumericWord(comment.reply_count, ['ответ', 'ответа', 'ответов'])}</button
+                    {showedReply ? "Скрыть" : "Показать"}
+                    {comment.reply_count}
+                    {utils.getNumericWord(comment.reply_count, [
+                        "ответ",
+                        "ответа",
+                        "ответов",
+                    ])}</button
                 >
             {/if}
             {#if showedReply && replies.length > 0}
@@ -193,6 +222,11 @@
 </div>
 
 <style>
+    .verified {
+        display: flex;
+        align-content: center;
+    }
+
     .comment-spoiler {
         position: absolute;
         left: -15px;
@@ -218,7 +252,7 @@
     .spoiler-blur {
         filter: blur(8px);
     }
-    
+
     .comment-replies {
         margin-top: 5px;
     }
@@ -311,7 +345,7 @@
 
     .comment-author-username img {
         margin-left: 5px;
-        margin-right: 5px;
+        margin-right: 2px;
     }
 
     .comment-author-date {

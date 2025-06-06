@@ -4,7 +4,7 @@
     import ProfileAvatar from "../profile/ProfileAvatar.svelte";
 </script>
 
-<button class="friend-item-row flex-row" on:click={() => updateViewportComponent(8, profile.id)}>
+<button class="friend-item-row flex-row" on:click={() => updateViewportComponent(9, profile.id)}>
     <div class="friend-item-row-image">
         <ProfileAvatar
             size={{ height: 40, width: 40 }}
@@ -37,6 +37,12 @@
                     {/if}
                 </div>
             {/if}
+
+            {#if profile.is_verified}
+                <div class="verified">                    
+                    <img height="20" width="20" src="./assets/icons/verified.svg" alt="verified" />
+                </div>
+            {/if}
         </div>
         <div class="friend-item-row-status flex-row">
             {profile.friend_count} друзей
@@ -45,6 +51,12 @@
 </button>
 
 <style>
+    .verified {
+        display: flex;
+        align-content: center;
+        margin-left: 3px;
+    }
+
     .friend-item-row {
         margin-bottom: 10px;
         cursor: pointer;

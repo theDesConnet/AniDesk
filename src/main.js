@@ -73,6 +73,18 @@ if (SettingsFirst.AutoUpdate) {
 
 if (require('electron-squirrel-startup')) app.quit();
 
+const isFirstInstance = app.requestSingleInstanceLock();
+
+if (!isFirstInstance) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 if (SettingsFirst.EnableRPC) discordRpcClient.login().catch(console.error);
 

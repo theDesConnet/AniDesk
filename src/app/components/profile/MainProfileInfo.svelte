@@ -70,6 +70,11 @@
                     />
                 {/if}
             {/if}
+            {#if profile.is_verified}
+                <div class="verified">                    
+                    <img height="38" width="38" src="./assets/icons/verified.svg" alt="verified" />
+                </div>
+            {/if}
             <Reputation score={profile.rating_score} />
             <div
                 class="profile-info-online flex-row"
@@ -120,6 +125,11 @@
 </div>
 
 <style>
+    .verified {
+        display: flex;
+        align-content: center;
+    }
+
     .profile-info-buttons {
         margin-top: 10px;
     }

@@ -2,21 +2,21 @@
     export let color;
     export let name;
     export let count;
+    export let size = 16;
 </script>
 
-<div class="stats-dot flex-row"><div class="stats-dot-color" style:background-color="var({color})"></div><span>{name}</span> <span class="stats-dot-count">{count}</span></div>
+<div class="stats-dot flex-row" style="--size: {size}px"><div class="stats-dot-color" style:background-color="var({color})"></div><span>{name}</span> <span class="stats-dot-count">{count}</span></div>
 
 <style>
     .stats-dot {
         align-items: center;
         text-align: center;
-        margin-right: 15px;
-        margin-top: 8px;
+        width: max-content;
     }
 
     .stats-dot-color {
-        width: 18px;
-        height: 18px;
+        width: calc(var(--size) + 2px);
+        height: calc(var(--size) + 2px);
         border-radius: 100%;
         margin-right: 10px;
     }
@@ -31,7 +31,7 @@
     }
 
     .stats-dot span {
-        font-size: 16px;
+        font-size: var(--size);
         font-weight: 400;
         margin-bottom: 0px;
         color: var(--third-text-color);

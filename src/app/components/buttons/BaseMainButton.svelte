@@ -7,6 +7,7 @@
     export let style = "default"
     export let disabled = false;
     export let type = "button";
+    export let currentColorVar = "--main-text-color";
 
     export let isLoading = false;
 
@@ -17,7 +18,7 @@
     }
 </script>
 
-<button class="base-main-button {customClasses} {style}" type={type} disabled={disabled || isLoading} style="--height: {height}px; --width: {width}; --border-radius: {borderRadius}px;" on:click='{handleClick}'>
+<button class="base-main-button {customClasses} {style}" type={type} disabled={disabled || isLoading} style="--current-color: var({currentColorVar}); --height: {height}px; --width: {width}; --border-radius: {borderRadius}px;" on:click='{handleClick}'>
     {#if isLoading}
         <span class="loader"></span>
     {:else}
@@ -53,6 +54,12 @@
     .primary:disabled {
         background-color: var(--alt-background-color) !important;
         color: var(--main-text-color);
+    }
+
+    .transparent {
+        background-color: transparent;
+        color: var(--current-color);
+        border: solid 1px var(--current-color);
     }
 
     .loader {

@@ -45,6 +45,19 @@
         height: var(--bookmark-height, 22px);
         border-radius: var(--bookmark-radius, 5px);
         overflow: hidden;
+        position: relative;
+    }
+
+    .bookmarks-bar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        background-color: var(--alt-background-color);
+        z-index: -1;
     }
 
     .segment {

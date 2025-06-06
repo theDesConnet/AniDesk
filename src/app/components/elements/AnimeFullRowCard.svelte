@@ -6,7 +6,7 @@
     export let anime;
 </script>
 
-<anime-full-row-card class="flex-row" onclick={() => updateViewportComponent(7, { id: anime.id })}>
+<anime-full-row-card class="flex-row" onclick={() => updateViewportComponent(8, { id: anime.id })}>
     <div class="full-row-anime-poster">
         <AnimePoster size={{ width: 140, height: 205 }} zIndex={inModal ? 2 : 0} posterInfo={{poster: anime.image, title: anime.title}} shadow={true} borderRadius={20} posterStyle={anime.profile_list_status ?? 0}/>
     </div>

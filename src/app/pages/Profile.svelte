@@ -77,7 +77,7 @@
                 dropped: p.profileInfo.profile.dropped_count}} 
                 />
 
-            <BookmarkStatsInfo profile={p.profileInfo.profile} />
+            <BookmarkStatsInfo item={p.profileInfo.profile} />
             <div class="stats-watch">
                 <div>Просмотрено серий: <span>{p.profileInfo.profile.watched_episode_count}</span></div>
                 <div>Время просмотра: <span>~ {utils.returnFullStringTime(p.profileInfo.profile.watched_time)}</span></div> 

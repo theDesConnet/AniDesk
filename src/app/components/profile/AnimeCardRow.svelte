@@ -8,7 +8,7 @@
 
 <div class="anime-card-row flex-row">
     {#each releases as r}
-        <button class="anime-card-release flex-column" onclick={() => updateViewportComponent(7, { id: r.id })}>
+        <button class="anime-card-release flex-column" onclick={() => updateViewportComponent(8, { id: r.id })}>
             <AnimePoster
                 size={{ width: 169, height: 242 }}
                 posterInfo={{ poster: r.image, title: r.title }}

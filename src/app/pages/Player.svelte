@@ -501,7 +501,7 @@
                     if (isFullscreen) {
                         elecWindow.exitFullscreen();
                     }
-                    updateViewportComponent(7, { id: args.release.id });
+                    updateViewportComponent(8, { id: args.release.id });
                     break;
             }
         };

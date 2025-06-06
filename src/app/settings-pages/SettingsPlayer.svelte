@@ -79,7 +79,7 @@
     <TitleElement title="Интерфейс" />
 
     <TextboxParam
-        title="Прозрачность интерфейса"
+        title="Непрозрачность интерфейса"
         value={playerSettings.opacityInterface}
         placeholder="50"
         type="number"

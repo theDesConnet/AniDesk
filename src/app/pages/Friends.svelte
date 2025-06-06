@@ -7,6 +7,7 @@
     import BaseMainButton from "../components/buttons/BaseMainButton.svelte";
     import BaseAltButton from "../components/buttons/BaseAltButton.svelte";
     import AuthPlaceholder from "./AuthPlaceholder.svelte";
+    import MetaInfo from "../components/gui/MetaInfo.svelte";
 
     let uid;
     let page = 0;
@@ -89,7 +90,7 @@
 
 {#snippet friendCard(f, raw, type = "friend")}
     <button
-        onclick={() => updateViewportComponent(8, f.profile.id)}
+        onclick={() => updateViewportComponent(9, f.profile.id)}
         class="friend flex-row"
         class:card-background={f.blog.channel?.cover}
         style="--background-image: url({f.blog.channel?.cover})"
@@ -176,6 +177,8 @@
         </div>
     </div>
 {/snippet}
+
+<MetaInfo subTitle="Друзья" />
 
 {#if anixApi.client.token}
     <div class="friends-page flex-column">

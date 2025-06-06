@@ -6,7 +6,7 @@
     export let currentRelease;
 </script>
 
-<button class="related-anime-item" onclick={() => updateViewportComponent(7, { id: anime.id })}>
+<button class="related-anime-item" onclick={() => updateViewportComponent(8, { id: anime.id })}>
     <AnimePoster size={{ width: 57, height: 84 }} posterInfo={{poster: anime.image, title: anime.title}} shadow={true} borderRadius={10} />
     <div class="related-anime-item-info">
         {#if currentRelease}

@@ -203,6 +203,7 @@
                         }}
                     />
                 </div>
+                <BookmarkStatsInfo item={r.release}  size={13} type="grid"/>
             </div>
             <div tabindex="-1" class="right-info-release flex-column">
                 <div class="release-title">{r.release.title_ru}</div>

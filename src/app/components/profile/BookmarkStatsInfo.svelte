@@ -1,18 +1,59 @@
 <script>
-    export let profile;
+    export let item;
     import BookmarkStatsDot from "../elements/BookmarkStatsDot.svelte";
+    export let size = 16;
+    export let type = "flex";
 </script>
 
-<div class="stats-info flex-row">
-    <BookmarkStatsDot color="--watching-color" name="Смотрю" count={profile.watching_count} />
-    <BookmarkStatsDot color="--plan-color" name="В планах" count={profile.plan_count} />
-    <BookmarkStatsDot color="--completed-color" name="Просмотрено" count={profile.completed_count} />
-    <BookmarkStatsDot color="--hold-on-color" name="Отложено" count={profile.hold_on_count} />
-    <BookmarkStatsDot color="--dropped-color" name="Брошено" count={profile.dropped_count} />
+<div class="stats-info stats-{type}">
+    <BookmarkStatsDot
+        color="--watching-color"
+        name="Смотрю"
+        count={item.watching_count}
+        {size}
+    />
+    <BookmarkStatsDot
+        color="--plan-color"
+        name="В планах"
+        count={item.plan_count}
+        {size}
+    />
+    <BookmarkStatsDot
+        color="--completed-color"
+        name="Просмотрено"
+        count={item.completed_count}
+        {size}
+    />
+    <BookmarkStatsDot
+        color="--hold-on-color"
+        name="Отложено"
+        count={item.hold_on_count}
+        {size}
+    />
+    <BookmarkStatsDot
+        color="--dropped-color"
+        name="Брошено"
+        count={item.dropped_count}
+        {size}
+    />
 </div>
 
 <style>
     .stats-info {
-        margin-top: 10px;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .stats-flex {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 5px 15px;
+        width: 100%;
     }
 </style>

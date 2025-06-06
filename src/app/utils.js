@@ -90,6 +90,16 @@ module.exports = {
         { label: "2x", value: 2.0 }
     ],
 
+    collectionSortValues: [
+        { label: "В закладках", value: 0 },
+        { label: "Лидеры рейтинга", value: 1 },
+        { label: "Популярные за год", value: 2 },
+        { label: "Популярные за сезон", value: 3 },
+        { label: "Популярные за неделю", value: 4 },
+        { label: "Недавно добавленные", value: 5 },
+        { label: "Случайные", value: 6 },
+    ],
+
     themeValues: [
         { label: "Темная", value: "dark" },
         { label: "Светлая (Не оптимизированная)", value: "light" }
@@ -178,9 +188,9 @@ module.exports = {
         return `${date.getDate() < 10 ? '0' + date.getDate() : date.getDate()}.${date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1}`
     },
 
-    returnTimeString(time) {
+    returnTimeString(time, showYear = false) {
         let date = new Date(time);
-        return `${date.getDate()} ${date.toLocaleString("default", { month: "short" })} в ${date.getHours()}:${date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()}`;
+        return `${date.getDate()} ${date.toLocaleString("default", { month: "short" })} ${showYear ? date.getFullYear() : ""} в ${date.getHours()}:${date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()}`;
     },
 
     returnFormatedTime(time) {
