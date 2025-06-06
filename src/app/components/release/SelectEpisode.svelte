@@ -194,7 +194,7 @@
                         avaliableQuality[String(playingSettings.defaultQuality)]
                             ?.src ?? avaliableQuality["720"]?.src;
 
-                    updateViewportComponent(10, {
+                    updateViewportComponent(11, {
                         src: `${URL.canParse(url) ? url : `https:${url}`}`,
                         currentQuality: 720,
                         avaliableQuality,

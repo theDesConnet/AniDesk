@@ -103,7 +103,7 @@
 
 <div
     class="left-menu menu-hidden unselectable"
-    class:hide={viewportComponent == views[10]}
+    class:hide={viewportComponent == views[11]}
 >
     <div class="top-menu-content">
         {#if !utoken}
