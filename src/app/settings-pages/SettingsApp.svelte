@@ -6,7 +6,7 @@
     import { localStorageWritable } from "@babichjacob/svelte-localstorage";
     import InfoElement from "../components/settings/InfoElement.svelte";
 
-    let guiSettings;
+    let guiSettings, endpointUrl;
 
     let restartRequired = baseSettings.restartRequired;
 
@@ -15,8 +15,14 @@
         utils.guiDefaultSettings,
     );
 
+    const endpointUrlRaw = localStorageWritable("endpointUrl", "api-s.anixsekai.com");   
+
     guiSettingsRaw.subscribe((value) => {
         guiSettings = value;
+    });
+    
+    endpointUrlRaw.subscribe((value) => {
+        endpointUrl = value;
     });
 
     function updateGuiKey(key, value) {
@@ -69,6 +75,19 @@
         value={baseSettings.EnableDevTools}
         onChangeCallback={(e) => updateMainKey("EnableDevTools", e)}
     />
+
+    <DropdownElement
+        title="Эндпоинт API"
+        values={utils.endpointValues}
+        value={endpointUrl}
+        placeholder="Выберите эндпоинт"
+        onChangeCallback={(e, v) => {
+            endpointUrlRaw.set(v);
+            restartRequired = true;
+            baseSettings.restartRequired = true;
+        }}
+    />
+
     <Separator width="75%" />
 
     <TitleElement title="Внешний вид" />

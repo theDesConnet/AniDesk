@@ -11,15 +11,21 @@
 
     window.utils = Utils;
 
-    let guiSettings;
+    let guiSettings, endpointUrl;
 
     const guiSettingsRaw = localStorageWritable(
         "guiSettings",
         utils.guiDefaultSettings,
     );
 
+    const endpointUrlRaw = localStorageWritable("endpointUrl", "api-s.anixsekai.com");   
+
     guiSettingsRaw.subscribe((value) => {
         guiSettings = value;
+    });
+
+    endpointUrlRaw.subscribe((value) => {
+        endpointUrl = value;
     });
 
     document.body.classList = [`${guiSettings.theme}-theme`];
@@ -68,11 +74,13 @@
     /**
      * Глобальные переменные
      */
+    window.baseSettings = settings.getAll().then((res) => (baseSettings = res));
     window.versions = prc
         .getVersions()
         .then((versions) => (window.versions = versions));
     window.anixApi = new Anixart({
         token: utoken?.token,
+        baseUrl: `https://${endpointUrl}`,
     }).endpoints;
     window.profileInfo = utoken
         ? anixApi.profile
@@ -89,7 +97,6 @@
     window.avaliableGPU = utils
         .checkGPUSupport()
         .then((res) => (avaliableGPU = res));
-    window.baseSettings = settings.getAll().then((res) => (baseSettings = res));
 
     if (utoken) {
         anixApi.settings

@@ -43,6 +43,12 @@ module.exports = {
         mode: 15
     },
 
+    endpointValues: [
+        { label: "api-s.anixsekai.com", value: "api-s.anixsekai.com" },
+        { label: "api.anixart.app", value: "api.anixart.app" },
+        { label: "api.anixart.tv (Заблокирован в РФ)", value: "api.anixart.tv" },
+    ],
+
     bookmarkSortValues: [
         { label: "По дате добавления: сначала новые", value: 1 },
         { label: "По дате добавления: сначала старые", value: 2 },
