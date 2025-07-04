@@ -67,6 +67,7 @@
         padding: 0 10px;
         height: 40px;
         box-sizing: border-box;
+        color: var(--main-text-color);
     }
 
     .text-input::after {

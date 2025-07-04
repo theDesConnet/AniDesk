@@ -59,6 +59,7 @@ button {
   background-color: transparent;
   position: relative;
   font-family: 'Inter', sans-serif;
+  color: var(--main-text-color);
 }
 
 body {
@@ -70,8 +71,6 @@ body {
 }
 
 .dark-theme {
-  color-scheme: dark light;
-  color: rgb(216 213 208);
   --background-color: #121212;
   --alt-background-color: #1a1919;
   --skeleton-background-color: #1c1b1b;
@@ -85,6 +84,7 @@ body {
   --third-text-color: rgb(161, 155, 146);
   --gray-btn: #6A6A6A;
   --settings-dropdown-selected-color: rgb(49, 48, 45);
+  color: var(--main-text-color);
 }
 
 .light-theme {
@@ -101,6 +101,7 @@ body {
   --third-text-color: #7a7a7a;
   --gray-btn: #c0c0c0;
   --settings-dropdown-selected-color: rgb(196, 193, 187);
+  color: var(--main-text-color);
 }
 
 @keyframes skeletonAnimation {

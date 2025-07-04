@@ -135,6 +135,7 @@
         border-radius: 50px;
         min-height: 48px;
         font-size: 16px;
+        color: var(--main-text-color);
     }
 
     .soon {

@@ -243,6 +243,7 @@
 
     .comment-text {
         position: relative;
+        color: var(--main-text-color);
     }
 
     .message-text {

@@ -543,6 +543,7 @@
         transition: background-color 0.15s ease-in-out;
         margin-bottom: 12px;
         margin-top: 8px;
+        color: var(--main-text-color);
     }
 
     .player-bottom-button:hover {
@@ -671,7 +672,7 @@
         display: flex;
         z-index: 3;
         justify-content: space-between;
-        color: #fff;
+        color: var(--main-text-color);
         font-size: 12px;
         align-items: center;
         vertical-align: middle;
@@ -717,6 +718,7 @@
         align-items: center;
         background-color: var(--player-middle-button);
         transition: background-color 0.2s ease-in-out;
+        color: var(--main-text-color);
     }
 
     .gui-play-button:hover {
@@ -770,6 +772,7 @@
         transition: background-color 0.2s ease-in-out;
         justify-content: center;
         align-items: center;
+        color: var(--main-text-color);
     }
 
     .gui-bottom-button:hover {

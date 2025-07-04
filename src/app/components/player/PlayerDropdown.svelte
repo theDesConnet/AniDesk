@@ -117,6 +117,7 @@
         cursor: pointer;
         align-items: center;
         text-align: left;
+        color: var(--main-text-color);
     }
     
     .top-align {

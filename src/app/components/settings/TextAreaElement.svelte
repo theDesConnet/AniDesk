@@ -43,6 +43,7 @@
         height: 80px;
         padding: 10px;
         box-sizing: border-box;
+        color: var(--main-text-color);
     }
 
     .text-info {
