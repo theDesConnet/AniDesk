@@ -258,7 +258,7 @@
 
         discordRPC.setActivity({
             type: 3,
-            state: `Смотрит аниме - ${episode.name}`,
+            state: `${episode.name}`,
             details: args.release.title_ru.slice(0, 127),
             largeImageKey: "anidesk-transparent",
             largeImageText: "AniDesk - Anixart Client",
@@ -269,7 +269,7 @@
             buttons: [
                 {
                     label: "Ссылка на релиз",
-                    url: `https://anixart.tv/release/${args.release.id}`,
+                    url: `https://anixart.app/release/${args.release.id}`,
                 },
                 { label: "Ссылка на клиент", url: "https://anidesk.ds1nc.ru/" },
             ],
@@ -519,7 +519,7 @@
 
             discordRPC.setActivity({
                 type: 3,
-                state: `Смотрит аниме - ${args.currentEpisode.name}`,
+                state: `${args.currentEpisode.name}`,
                 details: args.release.title_ru.slice(0, 127),
                 largeImageKey: "anidesk-transparent",
                 largeImageText: "AniDesk - Anixart Client",
@@ -527,7 +527,7 @@
                 buttons: [
                     {
                         label: "Ссылка на релиз",
-                        url: `https://anixart.tv/release/${args.release.id}`,
+                        url: `https://anixart.app/release/${args.release.id}`,
                     },
                     {
                         label: "Ссылка на клиент",

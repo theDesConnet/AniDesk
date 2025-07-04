@@ -38,7 +38,7 @@
             buttons: [
                 {
                     label: "Ссылка на релиз",
-                    url: `https://anixart.tv/release/${data.release.id}`,
+                    url: `https://anixart.app/release/${data.release.id}`,
                 },
                 { label: "Ссылка на клиент", url: "https://example.com/2" },
             ],
