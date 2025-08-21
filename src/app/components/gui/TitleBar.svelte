@@ -97,12 +97,12 @@
         display: flex;
         z-index: 9999;
         justify-content: space-between;
-        background-color: var(--background-color);
+        background-color: var(--title-bar-bg-color);
         color: var(--main-text-color);
         font-size: 12px;
         text-align: center;
         -webkit-app-region: drag;
-        height: 22px;
+        height: 28px;
         align-items: center;
         vertical-align: middle;
     }
@@ -110,11 +110,21 @@
     .title-bar-back {
         width: 55px;
         align-items: center;
+        transition: background-color 0.2s ease;
+    }
+
+    .title-bar-back:hover {
+        background-color: var(--btn-back-titlebar-hover) !important;
     }
 
     .title-bar-back svg {
         margin-left: auto;
         margin-right: auto;
+        transition: transform 0.2s ease-out;
+    }
+
+    .title-bar-back:hover svg {
+        transform: translateX(-2px);
     }
 
     .title-bar-text {
@@ -126,16 +136,17 @@
     }
 
     .button-title-bar:hover {
-        background-color: #1b1b1b;
+        background-color: var(--btn-titlebar-hover);
     }
 
     .button-title-bar {
         -webkit-app-region: no-drag;
-        height: 22px;
+        height: 100%;
         padding-left: 10px;
         padding-right: 10px;
         display: flex;
         align-items: center;
-        color: var(--main-text-color)
+        color: var(--main-text-color);
+        cursor: pointer;
     }
 </style>
