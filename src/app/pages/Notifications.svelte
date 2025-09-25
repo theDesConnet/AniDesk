@@ -151,6 +151,7 @@
         overflow-x: hidden;
         gap: 10px;
         padding-bottom: 10px;
+        box-shadow: 10px 9px 22px 1px rgba(0, 0, 0, 0.2);
     }
 
     .notify-center {
@@ -188,6 +189,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .modal-buttons button:hover {
+        background-color: var(--select-button-color);
     }
 
     .modal-buttons {

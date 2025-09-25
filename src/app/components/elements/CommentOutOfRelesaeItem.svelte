@@ -4,7 +4,7 @@
     import { Lottie } from "lottie-svelte";
 </script>
 
-<div
+<button
     class="comment flex-column"
     onclick={() =>
         updateViewportComponent(8, {
@@ -60,8 +60,7 @@
                         {/if}
                     </div>
                     <span
-                        class="rel"
-                        class:rel-text={!comment.profile?.badge_url}
+                        class="rel rel-text"
                         >к релизу</span
                     >
                 </div>
@@ -90,7 +89,7 @@
             </div>
         </div>
     </div>
-</div>
+</button>
 
 <style>
     .verified {
@@ -120,6 +119,8 @@
         color: var(--secondary-text-color);
         font-size: 12px;
         margin-bottom: 5px;
+        text-align: left;
+        margin-top: 4px;
     }
 
     .vote-count {
@@ -140,7 +141,8 @@
         margin-bottom: 10px;
         background-color: var(--alt-background-color);
         border-radius: 10px;
-        padding: 10px 20px;
+        padding: 15px 20px;
+        width: 100%;
     }
 
     .comment-author-info {
@@ -163,6 +165,8 @@
         color: var(--main-text-color);
         font-weight: 400;
         width: 100%;
+        text-align: left;
+        margin-top: 5px;
     }
 
     .comment-like-count {
