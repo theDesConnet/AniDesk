@@ -5,6 +5,13 @@
 module.exports = {
     seasons: [null, "Зима", "Весна", "Лето", "Осень"],
 
+    avaliableNotifications: [
+        "myCollection",
+        "relatedRelease",
+        "friend",
+    ], /*Отсеиваем неподдерживаемые уведомления в приложении чтобы потом небыло проблем с их обработкой 
+        (В последствии я буду добавлять новые типы уведомлений)*/
+
     playerDefaultSettings: {
         autoplayEpisode: true,
         defaultAspectRatio: "16-9",

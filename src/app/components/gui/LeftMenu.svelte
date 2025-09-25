@@ -24,6 +24,9 @@
     import CollectionIcon from "../../icons/collection.svg";
     import CollectionList from "../../pages/CollectionList.svelte";
     import Collection from "../../pages/Collection.svelte";
+    import Notifications from "../../pages/Notifications.svelte";
+    import NotifiactionAvaliable from "../../icons/notificationAvaliable.svg";
+    import { notificationCount } from "../stores/notificationCount";
 
     export const views = [
         Home,
@@ -50,6 +53,8 @@
     };
 
     let utoken;
+
+    $: nCount = $notificationCount;
 
     const user_token = localStorageWritable("user_token", null);
     user_token.subscribe((value) => (utoken = JSON.parse(value)));
@@ -153,9 +158,9 @@
     </div>
     <div class="bottom-menu-content">
         <LeftMenuButton
-            icon={NotificationIcon}
-            selected={viewportComponent == views[6]}
-            viewportComponentIndex={6}
+            icon={nCount > 0 ? NotifiactionAvaliable : NotificationIcon}
+            modalComponent={Notifications}
+            type="modal"
         />
         <LeftMenuButton
             icon={SettingsIcon}

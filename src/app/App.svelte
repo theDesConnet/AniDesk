@@ -8,6 +8,7 @@
     import { localStorageWritable } from "@babichjacob/svelte-localstorage";
     import BaseModal from "./components/modal/BaseModal.svelte";
     import FirstRunModal from "./components/modal/FirstRunModal.svelte";
+    import { notificationCount } from "./components/stores/notificationCount";
 
     window.utils = Utils;
 
@@ -92,8 +93,6 @@
         socials: null,
         login: null,
     };
-    window.pageHistory = [];
-    window.upscaleEnable = false;
     window.avaliableGPU = utils
         .checkGPUSupport()
         .then((res) => (avaliableGPU = res));
@@ -106,6 +105,10 @@
         anixApi.settings
             .getLoginInfo()
             .then((x) => (profileSettings.login = x));
+
+        anixApi.notification
+            .countNotifications()
+            .then((x) => (notificationCount.set(x.count)));
     }
 
     let views;
@@ -129,6 +132,12 @@
     window.addEventListener("resize", function handleResize(event) {
         isFullscreen = window.innerHeight === screen.height;
     });
+
+    setInterval(() => {
+        anixApi.notification
+            .countNotifications()
+            .then((x) => (notificationCount.set(x.count)));
+    }, 1800000) //Раз в 30 минут обновляем кол-во уведомлений
 </script>
 
 <main>
