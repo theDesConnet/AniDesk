@@ -194,12 +194,12 @@
                         if (!playingSettings.disableHistory) {
                             anixApi.release.markEpisodeAsWatched(
                                 args.id,
-                                sourceId ?? i.episodes[0].source.id,
+                                currentSourceId ?? i.episodes[0].source.id,
                                 d.position,
                             );
                             anixApi.release.addToHistory(
                                 args.id,
-                                sourceId ?? i.episodes[0].source.id,
+                                currentSourceId ?? i.episodes[0].source.id,
                                 d.position,
                             );
                         }
