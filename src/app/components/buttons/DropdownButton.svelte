@@ -10,27 +10,34 @@
     export let placeholder = "";
     export let title = "";
     export let disabled = false;
+    export let outsideElement = document;
 
     export let width = 200;
     export let height = 30;
     export let radius = 15;
+    export let iconSize = {
+        width: 25,
+        height: 25,
+    };
     export let maxListHeight = 400;
 
     let showed = false;
     let dropdownElem;
 
     function handleOutsideClick(e) {
+        console.log(showed, dropdownElem, e.target);
         if (showed && dropdownElem && !dropdownElem.contains(e.target)) {
+            console.log("click outside");
             showed = false;
         }
     }
 
     onMount(() => {
-        document.addEventListener("click", handleOutsideClick);
+        outsideElement.addEventListener("click", handleOutsideClick);
     });
 
     onDestroy(() => {
-        document.removeEventListener("click", handleOutsideClick);
+        outsideElement.removeEventListener("click", handleOutsideClick);
     });
 
     function selectItem(e, v) {
@@ -48,7 +55,20 @@
     style="--width: {width}px; --height: {height}px; --radius: {radius}px;"
 >
     <button class="dropdown-btn">
-        {values.find((v) => v.value === value)?.label || placeholder}
+        <div class="value-info items-center flex-row">
+            {#if values?.find((v) => v.value === value)?.icon}
+                <img
+                    class="icon-value"
+                    style="--width: {iconSize.width}px; --height: {iconSize.height}px;"
+                    src={values.find((v) => v.value === value)?.icon}
+                    alt="icon"
+                />
+            {/if}
+            <span
+                >{values.find((v) => v.value === value)?.label ||
+                    placeholder}</span
+            >
+        </div>
         <Icon
             src={showed ? upBtnIcon : downBtnIcon}
             size={{ width: 15, height: 15 }}
@@ -66,10 +86,22 @@
                 class:selected={v.value === value}
                 on:click={(e) => selectItem(e, v)}
             >
-                <span class="label">{v.label}</span>
-                {#if v.description}
-                    <span class="description">{v.description}</span>
-                {/if}
+                <div class="value-info flex-row">
+                    {#if v?.icon}
+                        <img
+                            class="icon-value"
+                            style="--width: {iconSize.width}px; --height: {iconSize.height}px;"
+                            src={v?.icon}
+                            alt="icon"
+                        />
+                    {/if}
+                    <div class="flex-column">
+                        <span class="label">{v.label}</span>
+                        {#if v.description}
+                            <span class="description">{v.description}</span>
+                        {/if}
+                    </div>
+                </div>
             </button>
         {/each}
     </div>
@@ -79,6 +111,10 @@
     .dropdown-wrapper {
         position: relative;
         width: var(--width);
+    }
+
+    .items-center {
+        align-items: center;
     }
 
     .dropdown-btn {
@@ -107,6 +143,16 @@
         border-radius: var(--radius);
         display: flex;
         flex-direction: column;
+    }
+
+    .icon-value {
+        width: var(--width);
+        height: var(--height);
+        border-radius: 100%;
+    }
+
+    .value-info {
+        gap: 5px;
     }
 
     .dropdown-item {

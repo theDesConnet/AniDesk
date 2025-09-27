@@ -276,6 +276,7 @@
         <BaseModal
             modalComponent={SelectEpisodes}
             showed={showSelectEpisodeModal}
+            modalSize={{ width: "1000px", height: "580px" }}
             modalArgs={r.release}
             bind:modalTitle={modalSubTitle}
             on:closeModal={() => (showSelectEpisodeModal = false)}

@@ -1,17 +1,40 @@
 <script>
     import Preloader from "../gui/Preloader.svelte";
     import { createEventDispatcher } from "svelte";
-    import { AniLibriaParser, SibnetParser, KodikParser } from "anixartjs";
+    import { AniLibriaParser, KodikParser } from "anixartjs";
     import { localStorageWritable } from "@babichjacob/svelte-localstorage";
+    import DropdownButton from "../buttons/DropdownButton.svelte";
 
     const dispatch = createEventDispatcher();
 
     export let args;
     export let showed;
 
-    let state = 0;
+    let currentDubberId,
+        currentSourceId,
+        currentSourceName,
+        playingSettings,
+        episodes;
 
-    let dubberId, sourceId, sourceName, playingSettings;
+    let dubberList = [];
+    let backgroundModal = document.querySelector(".modal-background");
+
+    anixApi.release.getDubbers(args.id).then((v) => {
+        selectDubber(v.types[0].id);
+        dubberList = v.types.map((x) => ({
+            label: x.name,
+            value: x.id,
+            icon:
+                x.icon == "" || !x.icon
+                    ? "./assets/icons/defaultDubber.svg"
+                    : x.icon,
+            description: `${x.view_count} просмотров | ${x.episodes_count} эпизодов`,
+        }));
+    });
+
+    let sourceList = {
+        sources: [],
+    };
 
     const playingSettingsRaw = localStorageWritable(
         "playingSettings",
@@ -22,191 +45,188 @@
         playingSettings = value;
     });
 
+    let favoriteSourceName = utils.sourceValues.find(
+        (x) => x.value === playingSettings?.defaultSource,
+    ).label;
+
+    async function selectDubber(id) {
+        currentDubberId = id;
+
+        episodes = null;
+
+        sourceList = await anixApi.release.getDubberSources(
+            args.id,
+            currentDubberId,
+        );
+
+        let matchedSource = sourceList.sources.find(
+            (x) => x.name == favoriteSourceName,
+        );
+
+        currentSourceId = !matchedSource
+            ? sourceList.sources[0].id
+            : matchedSource.id;
+
+        currentSourceName = !matchedSource
+            ? sourceList.sources[0].name
+            : matchedSource.name;
+
+        episodes = getEpisodes();
+
+        return sourceList;
+    }
+
+    function selectSource(src) {
+        currentSourceId = src;
+        currentSourceName = sourceList.sources.find((x) => x.id == src).name;
+    }
+
     function setTitle(title) {
         dispatch("setTitle", title);
     }
 
-    async function getEpisodes(id, dubberId, sourceId) {
-        if (typeof sourceId === "string") {
-            const sources = await anixApi.release.getDubberSources(
-                id,
-                dubberId,
-            );
-            let matched = sources.sources.find((x) => x.name === sourceId);
-
-            if (!matched) {
-                state = 1;
-                return null;
-            }
-
-            sourceId = matched.id;
-        }
-        return await anixApi.release.getEpisodes(id, dubberId, sourceId);
+    async function getEpisodes() {
+        return await anixApi.release.getEpisodes(
+            args.id,
+            currentDubberId,
+            currentSourceId,
+        );
     }
 </script>
 
-{#snippet baseCard(type, x, clickCallback)}
-    <div class="base-card" onclick={clickCallback}>
-        {#if type === "dub" || type === "source"}
-            <div class="base-card-image">
-                {#if !x?.icon || x.icon.trim() === ""}
-                    <img
-                        src="./assets/icons/defaultDubber.svg"
-                        alt="defaultDubber"
-                    />
-                {:else}
-                    <img width="65" height="65" src={x.icon} alt={x.name} />
-                {/if}
-            </div>
-        {/if}
+{#snippet baseCard(x, clickCallback)}
+    <button class="base-card" onclick={clickCallback}>
         <div class="base-card-name">
             {x.name}
-            {#if type === "dub"}
-                <div class="base-card-episodes">
-                    {x.episodes_count} эпизодов
-                </div>
+        </div>
+        <div class="right-menu flex-row">
+            {#if x.is_watched}
+                <img src="./assets/icons/checkmark.svg" alt="check" />
             {/if}
         </div>
-        {#if type === "dub" || type === "source"}
-            <div class="base-card-views">
-                {#if type === "dub"}
-                    {x.view_count}
-                    <img src="./assets/icons/view.svg" alt="view" />
-                {:else}
-                    {x.episodes_count} Эпизодов
-                {/if}
-            </div>
-        {/if}
-        {#if type === "episode"}
-            <div class="right-menu flex-row">
-                {#if x.is_watched}
-                    <img src="./assets/icons/checkmark.svg" alt="check" />
-                {/if}
-            </div>
-        {/if}
-    </div>
+    </button>
 {/snippet}
 
-{#if state === 0}
-    {setTitle("Выбор озвучки")}
-    <div class="modal-title">Выберите озвучку</div>
-    {#await anixApi.release.getDubbers(args.id)}
-        <div class="center">
-            <Preloader />
-        </div>
-    {:then i}
-        <div class="modal-content">
-            {#each i.types as d}
-                {@render baseCard("dub", d, () => {
-                    dubberId = d.id;
-                    state = playingSettings?.defaultSource != null ? 2 : 1;
-                    sourceName = utils.sourceValues.find(
-                        (x) => x.value === playingSettings?.defaultSource,
-                    ).label;
-                })}
-            {/each}
-        </div>
-    {/await}
-{:else if state === 1}
-    {setTitle("Выбор источника")}
-    <div class="modal-title">Выберите источник</div>
-    {#await anixApi.release.getDubberSources(args.id, dubberId)}
-        <div class="center">
-            <Preloader />
-        </div>
-    {:then i}
-        <div class="modal-content">
-            {#each i.sources as d}
-                {@render baseCard("source", d, () => {
-                    sourceId = d.id;
-                    sourceName = d.name;
-                    state = 2;
-                })}
-            {/each}
-        </div>
-    {/await}
-{:else if state === 2}
-    {setTitle("Выбор зпизода")}
-    <div class="modal-title">Выберите эпизод</div>
+<div class="modal-title">
+    <span class="title">Выбор эпизода</span>
+    <div class="modal-buttons flex-row">
+        <DropdownButton
+            placeholder="Озвучка"
+            bind:values={dubberList}
+            value={currentDubberId}
+            onChange={(e, v) => {
+                selectDubber(v);
+            }}
+            height={35}
+            width={280}
+            outsideElement={backgroundModal}
+        />
+        <DropdownButton
+            placeholder="Источник"
+            values={sourceList.sources.map((x) => ({
+                label: x.name,
+                value: x.id,
+                description: `${x.episodes_count} эпизодов`,
+            }))}
+            value={currentSourceId}
+            onChange={(e, v) => {
+                selectSource(v);
+                episodes = getEpisodes();
+            }}
+            height={35}
+            width={150}
+            outsideElement={backgroundModal}
+        />
+    </div>
+</div>
+<div class="modal-content">
+    {#key currentSourceId}
+        {#if episodes}
+            {#await episodes}
+                <div class="center">
+                    <Preloader />
+                </div>
+            {:then i}
+                {#each i.episodes as d}
+                    {@render baseCard(d, async () => {
+                        let avaliableQuality, link;
 
-    {#await getEpisodes(args.id, dubberId, sourceId ?? sourceName)}
-        <div class="center">
-            <Preloader />
-        </div>
-    {:then i}
-        <div class="modal-content">
-            {#each i.episodes as d}
-                {@render baseCard("episode", d, async () => {
-                    let avaliableQuality, link;
-                    switch (sourceName) {
-                        case "Kodik":
-                            let aQ = {};
-                            const kLinks = await KodikParser.getDirectLinks(
-                                d.url,
+                        switch (currentSourceName) {
+                            case "Kodik":
+                                let aQ = {};
+                                const kLinks = await KodikParser.getDirectLinks(
+                                    d.url,
+                                );
+                                for (const [key, value] of Object.entries(
+                                    kLinks,
+                                )) {
+                                    aQ[key] = {
+                                        src: value[0].src,
+                                    };
+                                }
+                                avaliableQuality = aQ;
+                                break;
+
+                            case "Libria":
+                                const aLinks =
+                                    await AniLibriaParser.getDirectLinks(d.url);
+                                avaliableQuality = aLinks.files.filter(
+                                    (x) => x.id == `s${d.position}`,
+                                )[0].file;
+                                break;
+
+                            case "Sibnet":
+                                await utils.fallback(async (success) => {
+                                    const link = await Sibnet.Parse(d.url);
+                                    if (!link) return;
+
+                                    avaliableQuality = {
+                                        "720": {
+                                            src: link,
+                                        },
+                                    };
+
+                                    success = true;
+                                }, 3);
+                                break;
+                        }
+
+                        if (!playingSettings.disableHistory) {
+                            anixApi.release.markEpisodeAsWatched(
+                                args.id,
+                                sourceId ?? i.episodes[0].source.id,
+                                d.position,
                             );
-                            for (const [key, value] of Object.entries(kLinks)) {
-                                aQ[key] = {
-                                    src: value[0].src,
-                                };
-                            }
-                            avaliableQuality = aQ;
-                            break;
-
-                        case "Libria":
-                            const aLinks = await AniLibriaParser.getDirectLinks(
-                                d.url,
+                            anixApi.release.addToHistory(
+                                args.id,
+                                sourceId ?? i.episodes[0].source.id,
+                                d.position,
                             );
-                            avaliableQuality = aLinks.files.filter(
-                                (x) => x.id == `s${d.position}`,
-                            )[0].file;
-                            break;
+                        }
 
-                        case "Sibnet":
-                            await utils.fallback(async (success) => {
-                                const link = await Sibnet.Parse(d.url);
-                                if (!link) return;
+                        const url =
+                            avaliableQuality[
+                                String(playingSettings.defaultQuality)
+                            ]?.src ?? avaliableQuality["720"]?.src;
 
-                                avaliableQuality = {
-                                    "720": {
-                                        src: link,
-                                    },
-                                };
-
-                                success = true;
-                            }, 3);
-                            break;
-                    }
-
-                    if (!playingSettings.disableHistory) {
-                        anixApi.release.markEpisodeAsWatched(
-                            args.id,
-                            sourceId ?? i.episodes[0].source.id,
-                            d.position,
-                        );
-                        anixApi.release.addToHistory(
-                            args.id,
-                            sourceId ?? i.episodes[0].source.id,
-                            d.position,
-                        );
-                    }
-
-                    const url =
-                        avaliableQuality[String(playingSettings.defaultQuality)]
-                            ?.src ?? avaliableQuality["720"]?.src;
-
-                    updateViewportComponent(11, {
-                        src: `${URL.canParse(url) ? url : `https:${url}`}`,
-                        currentQuality: 720,
-                        avaliableQuality,
-                        release: args,
-                        episodes: i.episodes,
-                        currentEpisode: d,
-                    });
-                })}
-            {/each}
-        </div>
-    {/await}
-{/if}
+                        updateViewportComponent(11, {
+                            src: `${URL.canParse(url) ? url : `https:${url}`}`,
+                            currentQuality: 720,
+                            avaliableQuality,
+                            release: args,
+                            episodes: i.episodes,
+                            currentEpisode: d,
+                        });
+                    })}
+                {/each}
+            {/await}
+        {:else}
+            <div class="center">
+                <Preloader />
+            </div>
+        {/if}
+    {/key}
+</div>
 
 <style>
     .center {
@@ -217,18 +237,30 @@
         height: 100%;
     }
 
+    .modal-buttons {
+        width: fit-content;
+        margin-right: 25px;
+        gap: 10px;
+    }
+
+    .modal-title {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
     .base-card {
         display: flex;
         flex-direction: row;
         align-items: center;
         cursor: pointer;
-        border-bottom: 1px solid var(--secondary-text-color);
-        margin-top: 10px;
-        padding-bottom: 5px;
+        height: 40px;
+        min-height: 40px;
+        border-radius: 7px;
     }
 
-    .base-card:first-child {
-        margin-top: 0px;
+    .base-card:hover {
+        background-color: var(--select-button-color);
     }
 
     .base-card-name {
@@ -238,31 +270,6 @@
         color: var(--main-text-color);
         display: flex;
         flex-direction: column;
-    }
-
-    .base-card-episodes {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-    }
-
-    .base-card-views {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-        font-weight: bold;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        margin-left: auto;
-        margin-right: 0px;
-        float: right;
-    }
-
-    .base-card-views img {
-        margin-left: 5px;
-    }
-
-    .base-card-image img {
-        border-radius: 100%;
     }
 
     .right-menu {
