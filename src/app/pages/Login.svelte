@@ -1,48 +1,78 @@
-<!--TODO: Recode this-->
-
 <script>
     import { localStorageWritable } from "@babichjacob/svelte-localstorage";
+    import { DefaultResult, LoginResult } from "anixartjs";
     import MetaInfo from "../components/gui/MetaInfo.svelte";
+    import BaseMainButton from "../components/buttons/BaseMainButton.svelte";
+    import { fade } from "svelte/transition";
     let u;
 
     const user = localStorageWritable("user_token", null);
-    user.subscribe((value) => u = value);
+    user.subscribe((value) => (u = value));
 
-    let invalidLogin = false;
+    let lastError = null;
+    let waitLogin = false;
+    let errorTimeout = null;
+
+    function setError(error) {
+        lastError = error;
+
+        if (errorTimeout) clearTimeout(errorTimeout);
+
+        errorTimeout = setTimeout(() => {
+            lastError = null;
+        }, 5000);
+    }
 
     async function login() {
+        waitLogin = true;
+        lastError = null;
+
         const login = document.getElementById("login").value;
         const password = document.getElementById("password").value;
 
         const res = await anixApi.auth.signIn({
             login: login,
-            password: password
-        })
+            password: password,
+        });
 
         switch (res.code) {
-            case 0:
-                user.set(JSON.stringify({
-                    id: res.profile.id,
-                    token: res.profileToken.token
-                }));
+            case DefaultResult.Ok:
+                user.set(
+                    JSON.stringify({
+                        id: res.profile.id,
+                        token: res.profileToken.token,
+                    }),
+                );
                 location.reload();
-                analytics.trackEvent("new_login")
+                analytics.trackEvent("new_login");
                 break;
-            case 2:
-                invalidLogin = true;
+            case LoginResult.InvalidLogin:
+                setError("Неверный логин!");
+                break;
+
+            case LoginResult.InvalidPassword:
+                setError("Неверный пароль!");
                 break;
         }
+
+        waitLogin = false;
     }
 </script>
 
 <MetaInfo subTitle="Вход" />
 
 <div class="login-page">
-    {#if invalidLogin}
-        <div>Неправильный логин или пароль</div>
+    {#if lastError}
+        <div
+            class="login-error"
+            in:fade={{ duration: 200 }}
+            out:fade={{ duration: 300 }}
+        >
+            {lastError}
+        </div>
     {/if}
     <div class="login-form">
-        <div class="login-form-title">Вход</div>
+        <div class="login-form-title">С возвращением</div>
         <div class="login-form-input">
             <div class="login-form-input-label">Логин</div>
             <input type="text" id="login" />
@@ -51,7 +81,17 @@
             <div class="login-form-input-label">Пароль</div>
             <input type="password" id="password" />
         </div>
-        <div class="login-form-button" on:click={async () => await login()}>Войти</div>
+        <div class="login-form-button">
+            <BaseMainButton
+                style="primary"
+                width="100%"
+                borderRadius={6}
+                height={30}
+                isLoading={waitLogin}
+                onClickCallback={async () => await login()}
+                >Войти</BaseMainButton
+            >
+        </div>
     </div>
 </div>
 
@@ -70,26 +110,55 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background-color: var(--alt-background-color);
+        width: 35%;
         border-radius: 10px;
         padding-left: 20px;
         padding-right: 20px;
     }
 
-    .login-form-button {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: bold;
-        background-color: #3f3e3e;
+    .login-error {
+        margin-bottom: 10px;
+        width: 35%;
+        background-color: var(--danger-color);
         color: var(--main-text-color);
-        height: 30px;
-        padding-left: 10px;
-        padding-right: 10px;
+        text-align: center;
+        padding: 10px;
         border-radius: 6px;
+    }
+
+    .login-form-input {
+        display: flex;
+        flex-direction: column;
         margin-top: 10px;
         margin-bottom: 10px;
+        width: 100%;
+    }
+
+    .login-form-input-label {
+        font-size: 16px;
+        color: var(--secondary-text-color);
+        margin-bottom: 5px;
+    }
+
+    .login-form-input input[type="text"],
+    .login-form-input input[type="password"] {
+        width: 100%;
+        height: 40px;
+        border-radius: 6px;
+        border: 1px solid var(--rate-back-color);
+        background-color: var(--alt-background-color);
+        color: var(--main-text-color);
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .login-form-title {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .login-form-button {
+        margin: 10px 0;
+        width: 100%;
     }
 </style>
