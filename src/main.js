@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, net, autoUpdater, dialog } = require('electron')
 const path = require('node:path')
 const o = require('openurl');
-const serve = require('electron-serve');
+const serve = require('electron-serve').default;
 const loadURL = serve({ directory: './public' });
 const fs = require('fs');
 const rpc = require("@xhayper/discord-rpc");

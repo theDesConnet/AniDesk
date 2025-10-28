@@ -3,7 +3,6 @@
     import Preloader from "../components/gui/Preloader.svelte";
     import DropdownButton from "../components/buttons/DropdownButton.svelte";
     import MetaInfo from "../components/gui/MetaInfo.svelte";
-    import { Auth } from "anixartjs/dist/api";
     import AuthPlaceholder from "./AuthPlaceholder.svelte";
 
     let page = 0;

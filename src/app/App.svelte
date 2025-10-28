@@ -9,6 +9,7 @@
     import BaseModal from "./components/modal/BaseModal.svelte";
     import FirstRunModal from "./components/modal/FirstRunModal.svelte";
     import { notificationCount } from "./components/stores/notificationCount";
+    import { fade } from "svelte/transition";
 
     window.utils = Utils;
 
@@ -19,7 +20,10 @@
         utils.guiDefaultSettings,
     );
 
-    const endpointUrlRaw = localStorageWritable("endpointUrl", "api-s.anixsekai.com");   
+    const endpointUrlRaw = localStorageWritable(
+        "endpointUrl",
+        "api-s.anixsekai.com",
+    );
 
     guiSettingsRaw.subscribe((value) => {
         guiSettings = value;
@@ -49,7 +53,9 @@
         largeImageKey: "anidesk-transparent",
         largeImageText: "AniDesk - Anixart Client",
         instance: true,
-        buttons: [{ label: "Ссылка на клиент", url: "https://anidesk.ds1nc.ru/" }],
+        buttons: [
+            { label: "Ссылка на клиент", url: "https://anidesk.ds1nc.ru/" },
+        ],
     });
 
     window.waitForElm = (selector) => {
@@ -108,7 +114,7 @@
 
         anixApi.notification
             .countNotifications()
-            .then((x) => (notificationCount.set(x.count)));
+            .then((x) => notificationCount.set(x.count));
     }
 
     let views;
@@ -136,8 +142,8 @@
     setInterval(() => {
         anixApi.notification
             .countNotifications()
-            .then((x) => (notificationCount.set(x.count)));
-    }, 1800000) //Раз в 30 минут обновляем кол-во уведомлений
+            .then((x) => notificationCount.set(x.count));
+    }, 1800000); //Раз в 30 минут обновляем кол-во уведомлений
 </script>
 
 <main>
@@ -158,13 +164,20 @@
                 class="unselectable"
                 tabindex="-1"
                 on:scroll={scrollEvent}
+                in:fade={{ duration: 200 }}
             >
                 <svelte:component
                     this={viewInfo.viewportComponent}
                     args={viewInfo.args}
                 ></svelte:component>
                 {#if firstRun}
-                <BaseModal modalComponent={FirstRunModal} canCloseOnBackground={false} showed={firstRun} modalSize={{width: "700px", height: "500px"}} on:closeModal={() => firstRun = false} />
+                    <BaseModal
+                        modalComponent={FirstRunModal}
+                        canCloseOnBackground={false}
+                        showed={firstRun}
+                        modalSize={{ width: "700px", height: "500px" }}
+                        on:closeModal={() => (firstRun = false)}
+                    />
                 {/if}
             </div>
         {/key}
