@@ -117,6 +117,8 @@
     }
 
     .login-error {
+        position: absolute;
+        top: 50px;
         margin-bottom: 10px;
         width: 35%;
         background-color: var(--danger-color);
