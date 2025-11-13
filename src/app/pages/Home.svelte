@@ -3,8 +3,8 @@
     import MetaInfo from "../components/gui/MetaInfo.svelte";
     import Preloader from "../components/gui/Preloader.svelte";
 
+    export let args;
     let page = 0;
-    let typeReleases = 0;
     let filterArgs = { sort: 0, status_id: null, category_id: null };
     let allData = [];
     let firstData = anixApi.release.filter(page, filterArgs, true);
@@ -18,10 +18,10 @@
     }
 
     function setReleasesType(type) {
-        if (typeReleases === type) return;
+        if (args.typeReleases === type) return;
         let viewport = document.getElementById("viewport");
 
-        typeReleases = type;
+        args.typeReleases = type;
         page = 0;
         allData = [];
         switch (type) {
@@ -71,27 +71,27 @@
 <div class="releases-type flex-row">
     <button
         class="releases-type-title flex-column"
-        class:selected={typeReleases == 0}
+        class:selected={args?.typeReleases == 0}
         onclick={() => setReleasesType(0)}>Последние</button
     >
     <button
         class="releases-type-title flex-column"
-        class:selected={typeReleases == 1}
+        class:selected={args?.typeReleases == 1}
         onclick={() => setReleasesType(1)}>Онгоинги</button
     >
     <button
         class="releases-type-title flex-column"
-        class:selected={typeReleases == 2}
+        class:selected={args?.typeReleases == 2}
         onclick={() => setReleasesType(2)}>Анонсы</button
     >
     <button
         class="releases-type-title flex-column"
-        class:selected={typeReleases == 3}
+        class:selected={args?.typeReleases == 3}
         onclick={() => setReleasesType(3)}>Завершенные</button
     >
     <button
         class="releases-type-title flex-column"
-        class:selected={typeReleases == 4}
+        class:selected={args?.typeReleases == 4}
         onclick={() => setReleasesType(4)}>Фильмы</button
     >
 </div>

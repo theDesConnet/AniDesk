@@ -129,11 +129,18 @@
             icon={HomeIcon}
             selected={viewportComponent == views[0]}
             viewportComponentIndex={0}
+            argsComponent = {{
+                typeReleases: 0
+            }}
         />
         <LeftMenuButton
             icon={BookmarkIcon}
             selected={viewportComponent == views[1]}
             viewportComponentIndex={1}
+            argsComponent = {{
+                typeBookmark: 0,
+                sort: 1
+            }}
         />
         <LeftMenuButton
             icon={FriendsIcon}
@@ -154,6 +161,9 @@
             icon={SearchIcon}
             selected={viewportComponent == views[5]}
             viewportComponentIndex={5}
+            argsComponent={{
+                query: null
+            }}
         />
     </div>
     <div class="bottom-menu-content">

@@ -9,21 +9,19 @@
     export let args;
 
     let page = 0;
-    let sort = 1;
-    let typeBookmark = args?.id ? 1 : 0;
     let total_count,
         firstData_count = null;
     let allData = [];
-    let firstData = args?.id
+    let firstData = args?.id || args.typeBookmark != 0
         ? anixApi.profile.getBookmarks({
-              type: typeBookmark,
+              type: args.typeBookmark,
               id: args?.id ?? null,
-              sort: sort,
+              sort: args.sort,
               page,
           })
         : anixApi.profile.getFavorites({
               page: 0,
-              sort: sort,
+              sort: args.sort,
               filter_announce: 0,
           });
 
@@ -32,17 +30,17 @@
     async function getMainPage() {
         let data;
 
-        if (typeBookmark == 0) {
+        if (args.typeBookmark == 0) {
             data = await anixApi.profile.getFavorites({
                 page,
-                sort: sort,
+                sort: args.sort,
                 filter_announce: 0,
             });
         } else {
             data = await anixApi.profile.getBookmarks({
-                type: typeBookmark,
+                type: args.typeBookmark,
                 id: args?.id ?? null,
-                sort: 1,
+                sort: args.sort,
                 page,
             });
         }
@@ -60,17 +58,17 @@
     }
 
     function setReleasesType(type) {
-        if (typeBookmark === type) return;
+        if (args.typeBookmark === type) return;
         let viewport = document.getElementById("viewport");
 
-        typeBookmark = type;
+        args.typeBookmark = type;
         page = 0;
         allData = [];
         switch (type) {
             case 0:
                 firstData = anixApi.profile.getFavorites({
                     page: 0,
-                    sort: 1,
+                    sort: args.sort,
                     filter_announce: 0,
                 });
                 break;
@@ -81,9 +79,9 @@
             case 4:
             case 5:
                 firstData = anixApi.profile.getBookmarks({
-                    type: typeBookmark,
+                    type: args.typeBookmark,
                     id: args?.id ?? null,
-                    sort: 1,
+                    sort: args.sort,
                     page,
                 });
                 break;
@@ -126,7 +124,7 @@
         {#if !args?.isModal}
             <button
                 class="releases-type-title flex-column"
-                class:selected={typeBookmark == 0}
+                class:selected={args.typeBookmark == 0}
                 onclick={() => setReleasesType(0)}
             >
                 Избранное
@@ -134,35 +132,35 @@
         {/if}
         <button
             class="releases-type-title flex-column"
-            class:selected={typeBookmark == 1}
+            class:selected={args.typeBookmark == 1}
             onclick={() => setReleasesType(1)}
         >
             Смотрю
         </button>
         <button
             class="releases-type-title flex-column"
-            class:selected={typeBookmark == 2}
+            class:selected={args.typeBookmark == 2}
             onclick={() => setReleasesType(2)}
         >
             В планах
         </button>
         <button
             class="releases-type-title flex-column"
-            class:selected={typeBookmark == 3}
+            class:selected={args.typeBookmark == 3}
             onclick={() => setReleasesType(3)}
         >
             Просмотрено
         </button>
         <button
             class="releases-type-title flex-column"
-            class:selected={typeBookmark == 4}
+            class:selected={args.typeBookmark == 4}
             onclick={() => setReleasesType(4)}
         >
             Отложено
         </button>
         <button
             class="releases-type-title flex-column"
-            class:selected={typeBookmark == 5}
+            class:selected={args.typeBookmark == 5}
             onclick={() => setReleasesType(5)}
         >
             Брошено
@@ -176,14 +174,14 @@
     >
         <div class="flex-row releases-title">
             <span>Всего {total_count}</span>
-            <DropdownButton values={utils.bookmarkSortValues} value={sort} width={300} onChange={(e, v) => {
-                sort = v;
+            <DropdownButton values={utils.bookmarkSortValues} value={args.sort} width={300} onChange={(e, v) => {
+                args.sort = v;
                 page = 0;
                 allData = [];
                 firstData = anixApi.profile.getBookmarks({
-                    type: typeBookmark,
+                    type: args.typeBookmark,
                     id: args?.id ?? null,
-                    sort: sort,
+                    sort: args.sort,
                     page,
                 });
             }}/>

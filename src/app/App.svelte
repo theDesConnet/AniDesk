@@ -121,7 +121,7 @@
 
     let viewInfo = {
         viewportComponent: HomePage,
-        args: null,
+        args: {typeReleases: 0},
     };
 
     let viewInfoOld = {

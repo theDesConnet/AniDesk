@@ -6,24 +6,24 @@
     import MetaInfo from "../components/gui/MetaInfo.svelte";
     import utils from "../utils";
 
-    let searchRequest = {
-        query: "",
-        searchBy: 0,
-        page: 0
-    }
+    export let args;
 
     let firstData = [];
     let allData = [];
 
-    let timeout, relatedModalSubTitle;
+    let timeout, relatedModalSubTitle, searchBoxElement;
     let relatedModalShowed = false;
 
     function search() {
-        firstData = anixApi.release.search(searchRequest) 
+        firstData = anixApi.search.releases({
+            query: args.query,
+            searchBy: 0,
+            page: 0,
+        });
     }
 
     function inputEvent(e) {
-        searchRequest.query = e.srcElement.value;
+        args.query = e.srcElement.value;
 
         if (timeout) {
             clearTimeout(timeout);
@@ -31,46 +31,80 @@
 
         timeout = setTimeout(() => search(), 1500);
     }
+
+    if (args.query) {
+        search();
+    }
 </script>
 
 <div class="search-top-div flex-row">
     <div class="search-box flex-row">
-        <input class="search-box-text" oninput={inputEvent} type='text' placeholder="Введите запрос...">
+        <input
+            bind:this={searchBoxElement}
+            class="search-box-text"
+            oninput={inputEvent}
+            type="text"
+            placeholder="Введите запрос..."
+            value={args.query}
+        />
     </div>
 </div>
 <div class="result-content flex-column">
     {#await firstData}
-    <Preloader />
+        <Preloader />
     {:then data}
-    {#key relatedModalSubTitle}
-    <MetaInfo
-        subTitle={relatedModalSubTitle === null
-            ? searchRequest.query
-            : `${relatedModalSubTitle} | ${searchRequest.query}`}
-    />
-    {/key}
-    <span class="title">Результаты поиска</span>
-    {#if data.related}
-    <button onclick={() => relatedModalShowed = true}>
-    <div class="related-release flex-row">
-        <div class="release-images flex-row">
-            {#each { length: 3 } as _, i}
-            <img src={data.related.images[i] ?? "./assets/images/no_image.jpg"} width="180px" height="240px" alt="Release">
-            {/each}
-        </div>
-        <div class="flex-column related-info">
-            <span class="related-title">{data.related.name_ru}</span>
-            <span class="related-count">{data.related.release_count} {utils.getNumericWord(data.related.release_count, ['релиз в', 'релиза во', 'релизов в'])}  франшизе</span>
-            <span class="related-description">{data.related.description}</span>
-        </div>
-    </div>
-    </button>
+        {#key relatedModalSubTitle}
+            <MetaInfo
+                subTitle={relatedModalSubTitle === null
+                    ? args.query
+                    : `${relatedModalSubTitle} | ${args.query}`}
+            />
+        {/key}
+        <span class="title">Результаты поиска</span>
+        {#if data.related}
+            <button onclick={() => (relatedModalShowed = true)}>
+                <div class="related-release flex-row">
+                    <div class="release-images flex-row">
+                        {#each { length: 3 } as _, i}
+                            <img
+                                src={data.related.images[i] ??
+                                    "./assets/images/no_image.jpg"}
+                                width="180px"
+                                height="240px"
+                                alt="Release"
+                            />
+                        {/each}
+                    </div>
+                    <div class="flex-column related-info">
+                        <span class="related-title">{data.related.name_ru}</span
+                        >
+                        <span class="related-count"
+                            >{data.related.release_count}
+                            {utils.getNumericWord(data.related.release_count, [
+                                "релиз в",
+                                "релиза во",
+                                "релизов в",
+                            ])} франшизе</span
+                        >
+                        <span class="related-description"
+                            >{data.related.description}</span
+                        >
+                    </div>
+                </div>
+            </button>
 
-    <BaseModal modalComponent={RelatedModal} modalArgs={data.related} showed={relatedModalShowed} modalSize={{width: "80%", height: "90%"}} bind:modalTitle={relatedModalSubTitle} on:closeModal={() => relatedModalShowed = false} />
-    {/if}
-    {#each data.releases as r}
-    <AnimeFullRowCard anime={r} />
-    {/each}
+            <BaseModal
+                modalComponent={RelatedModal}
+                modalArgs={data.related}
+                showed={relatedModalShowed}
+                modalSize={{ width: "80%", height: "90%" }}
+                bind:modalTitle={relatedModalSubTitle}
+                on:closeModal={() => (relatedModalShowed = false)}
+            />
+        {/if}
+        {#each data.releases as r}
+            <AnimeFullRowCard anime={r} />
+        {/each}
     {/await}
 </div>
 
@@ -107,7 +141,8 @@
         z-index: -1;
     }
 
-    .release-images img:first-child, .release-images img:last-child {
+    .release-images img:first-child,
+    .release-images img:last-child {
         height: 204px;
         width: 140px;
         position: relative;
@@ -183,7 +218,7 @@
         background-color: var(--alt-background-color);
         border: none;
         outline: none;
-        color: var(--main-text-color)
+        color: var(--main-text-color);
     }
 
     .search-box-text:active {

@@ -6,11 +6,12 @@
     export let selected
     export let type = "viewport";
     export let modalComponent;
+    export let argsComponent = null;
 
     let modalShowed = false;
 </script>
 
-<button class="left-menu-button" onclick={() => type == "viewport" ? updateViewportComponent(viewportComponentIndex) : modalShowed = !modalShowed} class:selected={selected}>
+<button class="left-menu-button" onclick={() => type == "viewport" ? updateViewportComponent(viewportComponentIndex, argsComponent) : modalShowed = !modalShowed} class:selected={selected}>
     <Icon src={icon} varColor="--main-text-color" size={{width: 20, height: 20}}/>
 </button>
 
