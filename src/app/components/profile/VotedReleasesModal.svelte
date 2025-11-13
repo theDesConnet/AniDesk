@@ -12,11 +12,11 @@
 
     let page = 0;
     let allData = [];
-    let firstData = anixApi.profile.getVotesReleases(args.id, page);
+    let firstData = anixApi.profile.getVotedReleases(args.id, page);
     let updateInfo = false
 
     async function getRelatedPage() {
-        const data = await anixApi.profile.getVotesReleases(args.id, page);
+        const data = await anixApi.profile.getVotedReleases(args.id, page);
         allData = allData.concat(data.content);
         updateInfo = false;
     }

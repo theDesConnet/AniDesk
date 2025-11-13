@@ -211,7 +211,7 @@
             value={profileSettings.main.privacy_social}
             values={utils.privacyOptions}
             onChangeCallback={async (e, v) => {
-                const res = await anixApi.settings.setPrivacySocials(v);
+                const res = await anixApi.settings.setPrivacySocial(v);
 
                 if (res.code == 0) {
                     profileSettings.main.privacy_socials = v;
