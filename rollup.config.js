@@ -5,7 +5,6 @@ import livereload from 'rollup-plugin-livereload';
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
 import { spawn } from 'child_process';
-import { obfuscator } from 'rollup-obfuscator';
 import { string } from 'rollup-plugin-string'
 import svgo from 'rollup-plugin-svgo';
 
@@ -63,7 +62,6 @@ export default {
         commonjs(),
         !production && serve(),
         !production && livereload('public'),
-        production && obfuscator(),
         production && terser(),
         
     ],
