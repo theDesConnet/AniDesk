@@ -230,9 +230,9 @@
             video.src = link;
         }
 
-        video.play();
-
         args.src = link;
+
+        await video.play();
 
         if (!playingSettings.disableHistory) {
             anixApi.release.markEpisodeAsWatched(
@@ -525,7 +525,7 @@
 
             discordRPC.setActivity({
                 type: 3,
-                state: `${args.currentEpisode.name}`,
+                state: `${currentEpisode.name}`,
                 details: args.release.title_ru.slice(0, 127),
                 largeImageKey: "anidesk-transparent",
                 largeImageText: "AniDesk - Anixart Client",
@@ -543,15 +543,17 @@
             });
         };
 
-        video.onplay = () => {
+        video.onplay = (e) => {
             isPaused = false;
             loading = false;
 
             startTimestamp = Date.now();
 
+            console.log(e.target.duration, e.target.currentTime);
+
             discordRPC.setActivity({
                 type: 3,
-                state: `Смотрит аниме - ${args.currentEpisode.name}`,
+                state: `${currentEpisode.name}`,
                 details: args.release.title_ru.slice(0, 127),
                 largeImageKey: "anidesk-transparent",
                 largeImageText: "AniDesk - Anixart Client",
@@ -607,7 +609,7 @@
 
         discordRPC.setActivity({
             type: 3,
-            state: `Смотрит аниме - ${args.currentEpisode.name}`,
+            state: `${currentEpisode.name}`,
             details: args.release.title_ru.slice(0, 127),
             largeImageKey: "anidesk-transparent",
             largeImageText: "AniDesk - Anixart Client",
