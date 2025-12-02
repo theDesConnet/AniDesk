@@ -510,6 +510,12 @@
             pressedKeys.delete(e.code);
         };
 
+        // Очищаем массив нажатых клавиш при потере фокуса окна, чтобы небыло проблем
+        // когда клавиша осталась в массиве из-за чего хоткеи перестают работать
+        window.onblur = () => {
+            pressedKeys.clear();
+        }
+
         durationTime = utils.returnFormatedTime(video.duration);
         startTimestamp = Date.now();
 
@@ -630,6 +636,7 @@
         window.onwheel = null;
         window.onkeydown = null;
         window.onkeyup = null;
+        window.onblur = null;
         video.onpause = null;
         video.onplay = null;
         video.ontimeupdate = null;
