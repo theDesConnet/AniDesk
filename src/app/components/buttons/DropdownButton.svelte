@@ -25,9 +25,7 @@
     let dropdownElem;
 
     function handleOutsideClick(e) {
-        console.log(showed, dropdownElem, e.target);
         if (showed && dropdownElem && !dropdownElem.contains(e.target)) {
-            console.log("click outside");
             showed = false;
         }
     }

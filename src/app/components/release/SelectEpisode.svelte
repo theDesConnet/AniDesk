@@ -169,7 +169,6 @@
 
                             case "Liberty":
                             case "Libria":
-                                console.log(d.url);
                                 const aLinks =
                                     await AniLibriaParser.getDirectLinks(d.url);
                                 avaliableQuality = aLinks;

@@ -179,7 +179,6 @@
             case "Liberty":
             case "Libria":
                 await utils.fallback(async (success) => {
-                    console.log(episode.url);
                     const aLinks = await AniLibriaParser.getDirectLinks(
                         episode.url,
                     );
@@ -548,8 +547,6 @@
             loading = false;
 
             startTimestamp = Date.now();
-
-            console.log(e.target.duration, e.target.currentTime);
 
             discordRPC.setActivity({
                 type: 3,
