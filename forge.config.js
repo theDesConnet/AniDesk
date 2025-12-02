@@ -24,11 +24,19 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      platforms: ['darwin', 'linux'],
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          name: "anidesk",
+          productName: "AniDesk",
+          icon: "icon/icon.ico",
+          maintainer: 'DesConnet, hack1exe',
+          homepage: "https://anidesk.ds1nc.ru",
+        }
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
