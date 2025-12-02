@@ -176,14 +176,14 @@
                 avaliableQuality = aQ;
                 break;
 
+            case "Liberty":
             case "Libria":
                 await utils.fallback(async (success) => {
+                    console.log(episode.url);
                     const aLinks = await AniLibriaParser.getDirectLinks(
                         episode.url,
                     );
-                    avaliableQuality = aLinks.files.filter(
-                        (x) => x.id == `s${episode.position}`,
-                    )[0].file;
+                    avaliableQuality = aLinks;
 
                     success = true;
                 }, 3);

@@ -167,12 +167,12 @@
                                 avaliableQuality = aQ;
                                 break;
 
+                            case "Liberty":
                             case "Libria":
+                                console.log(d.url);
                                 const aLinks =
                                     await AniLibriaParser.getDirectLinks(d.url);
-                                avaliableQuality = aLinks.files.filter(
-                                    (x) => x.id == `s${d.position}`,
-                                )[0].file;
+                                avaliableQuality = aLinks;
                                 break;
 
                             case "Sibnet":
