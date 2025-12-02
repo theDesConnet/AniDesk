@@ -25,7 +25,8 @@ const DefaultSettings = {
 };
 
 const discordRpcClient = new rpc.Client({
-  clientId: rpcClientId
+  clientId: rpcClientId,
+  transport: 'ipc'
 })
 
 discordRpcClient.on('ready', () => {
