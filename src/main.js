@@ -154,7 +154,7 @@ function createWindow() {
         UpsertKeyValue(requestHeaders, 'Referer', url);
       }
 
-      if (host !== "kodik.info" && host !== "video.sibnet.ru") {
+      if (host !== "kodikplayer.com" && host !== "video.sibnet.ru") {
         UpsertKeyValue(requestHeaders, 'sec-ch-ua-platform', "Android");
         UpsertKeyValue(requestHeaders, 'sec-ch-ua-mobile', "?1");
         UpsertKeyValue(requestHeaders, 'sec-ch-ua', "AnixartApp");
