@@ -20,30 +20,6 @@
 
 > ⚠️ Актуальные сборки доступны на странице [релизов](https://github.com/theDesConnet/AniDesk/releases)
 
-Nix / NixOS
-  - Запуск из локального репозитория:
-    ```bash
-    nix run .#
-    ```
-  - Установка в профиль:
-    ```bash
-    nix profile install .#
-    ```
-  - Подключение в `flake.nix` конфигурации NixOS:
-    ```nix
-    {
-      inputs.anidesk.url = "github:theDesConnet/AniDesk";
-
-      outputs = { nixpkgs, anidesk, ... }: {
-        nixosConfigurations.<hostname> = nixpkgs.lib.nixosSystem {
-          modules = [
-            anidesk.nixosModules.default
-          ];
-        };
-      };
-    }
-    ```
-
 Архив
   - Скачайте архив с последней версией для вашей ОС.
   - Распакуйте и запустите файл `AniDesk`.
@@ -51,6 +27,21 @@ Nix / NixOS
 Установочный файл
  - Скачайте установочный файл последней версии для вашей ОС
  - Запустите его, и дождитесь установки.
+
+Nix / NixOS
+  ```nix
+  {
+    inputs.anidesk.url = "github:theDesConnet/AniDesk";
+
+    outputs = { nixpkgs, anidesk, ... }: {
+      nixosConfigurations.<hostname> = nixpkgs.lib.nixosSystem {
+        modules = [
+          anidesk.nixosModules.default
+        ];
+      };
+    };
+  }
+  ```
 
 ## 🛠️ Сборка вручную
 
