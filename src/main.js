@@ -24,6 +24,9 @@ const DefaultSettings = {
   EnableDevTools: false
 };
 
+// Upscale fix on Linux for AMDGPU
+app.commandLine.appendSwitch('enable-unsafe-webgpu');
+
 const discordRpcClient = new rpc.Client({
   clientId: rpcClientId,
   transport: 'ipc'
