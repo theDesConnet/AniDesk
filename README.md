@@ -28,6 +28,21 @@
  - Скачайте установочный файл последней версии для вашей ОС
  - Запустите его, и дождитесь установки.
 
+Nix / NixOS
+  ```nix
+  {
+    inputs.anidesk.url = "github:theDesConnet/AniDesk";
+
+    outputs = { nixpkgs, anidesk, ... }: {
+      nixosConfigurations.<hostname> = nixpkgs.lib.nixosSystem {
+        modules = [
+          anidesk.nixosModules.default
+        ];
+      };
+    };
+  }
+  ```
+
 ## 🛠️ Сборка вручную
 
 ```bash
