@@ -4,17 +4,40 @@
     export let inModal = false;
 
     export let anime;
+
+    $: hasHistoryInfo = Boolean(anime?.last_view_episode);
+    $: showRating =
+        !hasHistoryInfo &&
+        typeof anime?.grade === "number" &&
+        utils.returnEpisodeString(anime) != "?" &&
+        anime?.status?.id !== 3;
 </script>
 
 <anime-full-row-card class="flex-row" onclick={() => updateViewportComponent(8, { id: anime.id })}>
     <div class="full-row-anime-poster">
-        <AnimePoster size={{ width: 140, height: 205 }} zIndex={inModal ? 2 : 0} posterInfo={{poster: anime.image, title: anime.title}} shadow={true} borderRadius={20} posterStyle={anime.profile_list_status ?? 0}/>
+        <AnimePoster size={{ width: 140, height: 205 }} zIndex={inModal ? 2 : 0} posterInfo={{poster: anime.image, title: anime.title ?? anime.title_ru}} shadow={true} borderRadius={20} posterStyle={anime.profile_list_status ?? 0}/>
     </div>
     <div class="flex-column">
         <div class="anime-item-title">{anime.title_ru}</div>
         <slot></slot>
-        <div class="anime-item-epCount flex-row">{utils.returnEpisodeString(anime)} эп. {#if utils.returnEpisodeString(anime) != "?" && anime.status?.id !== 3}<Dot size={{width: 4, height: 4}} />{anime.grade.toFixed(2)} ★{/if}</div>
-        <div class="anime-item-description">{anime.description}...</div>
+        <div class="anime-item-epCount flex-row">
+            {#if hasHistoryInfo}
+                {anime.last_view_episode.name}
+                {#if anime.last_view_timestamp}
+                    <Dot size={{width: 4, height: 4}} />
+                    {utils.returnTimeString(anime.last_view_timestamp * 1000)}
+                {/if}
+            {:else}
+                {utils.returnEpisodeString(anime)} эп.
+                {#if showRating}
+                    <Dot size={{width: 4, height: 4}} />
+                    {anime.grade.toFixed(2)} ★
+                {/if}
+            {/if}
+        </div>
+        {#if anime.description}
+            <div class="anime-item-description">{anime.description}...</div>
+        {/if}
     </div>
 </anime-full-row-card>
 

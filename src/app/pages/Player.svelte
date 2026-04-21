@@ -116,6 +116,25 @@
         await renderUpscale();
     }
 
+    function updatePlayingSettings(patch) {
+        playingSettings = {
+            ...playingSettings,
+            ...patch,
+        };
+        playingSettingsRaw.set(playingSettings);
+    }
+
+    function rememberPlaybackSelection(source) {
+        if (!playingSettings?.rememberSelection || !source) return;
+
+        updatePlayingSettings({
+            lastDubberId: source.type?.id ?? null,
+            lastDubberName: source.type?.name ?? null,
+            lastSourceId: source.id ?? null,
+            lastSourceName: source.name ?? null,
+        });
+    }
+
     //aspect-16-9
     //aspect-4-3
     //aspect-fit
@@ -163,6 +182,8 @@
                 ? args.episodes.find((x) => episode.source == x.source["@id"])
                       .source
                 : episode.source;
+
+        rememberPlaybackSelection(source);
 
         switch (source.name) {
             case "Kodik":
@@ -596,6 +617,8 @@
                       (x) => args.currentEpisode.source == x.source["@id"],
                   ).source
                 : args.currentEpisode.source;
+
+        rememberPlaybackSelection(source);
 
         analytics.trackEvent("play_anime", {
             source: source.name,
