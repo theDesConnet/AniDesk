@@ -5,23 +5,28 @@
     import HotkeyElement from "../components/settings/HotkeyElement.svelte";
     import TextboxParam from "../components/settings/TextboxElement.svelte";
     import TitleElement from "../components/settings/TitleElement.svelte";
-    import { localStorageWritable } from "@babichjacob/svelte-localstorage";
+    import { playerSettingsStore } from "../components/stores/pageHistory.js";
 
     let playerSettings;
 
-    const playerSettingsRaw = localStorageWritable(
-        "playerSettings",
-        utils.playerDefaultSettings,
-    );
-
-    playerSettingsRaw.subscribe((value) => {
+    playerSettingsStore.subscribe((value) => {
         playerSettings = value;
     });
 
     function updateKey(key, value) {
-        playerSettings[key] = value;
+        playerSettings = {
+            ...playerSettings,
+            [key]: value,
+        };
 
-        playerSettingsRaw.set(playerSettings);
+        playerSettingsStore.set(playerSettings);
+        localStorage.setItem("playerSettings", JSON.stringify(playerSettings));
+
+        switch (key) {
+            case "saveUserVolume":
+                settings.set("PlayerSaveUserVolumeEnabled", value.enabled);
+                break;
+        }
     }
 </script>
 
@@ -59,19 +64,10 @@
         onChangeCallback={(e) =>
             updateKey("saveUserVolume", {
                 enabled: e,
-                lastValue: playerSettings.saveUserVolume.lastValue,
+                lastValue:
+                    playerSettings.saveUserVolume.lastValue ??
+                    playerSettings.defaultVolume / 100,
             })}
-    />
-    <TextboxParam
-        title="Громкость по умолчанию"
-        value={playerSettings.defaultVolume}
-        placeholder="100"
-        type="number"
-        suffix="%"
-        min="1"
-        max="100"
-        onChangeCallback={(e) =>
-            updateKey("defaultVolume", Number(e.target.value))}
     />
 
     <Separator width="75%" />
