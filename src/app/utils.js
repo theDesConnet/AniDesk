@@ -21,7 +21,7 @@ module.exports = {
         },
         defaultVolume: 50,
         opacityInterface: 50,
-        timeHideInterface: 5000,
+        timeHideInterface: 2000,
         hotkeys: {
             hotkeyPlayPause: ["Space"],
             hotkeyNextEpisode: ["KeyN"],

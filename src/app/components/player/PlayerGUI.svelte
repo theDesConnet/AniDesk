@@ -22,6 +22,9 @@
     export let upscaleEnabled;
     export let changeAspectRatio;
     export let aspectRatio;
+    export let togglePictureInPicture;
+    export let isPictureInPictureAvailable = false;
+    export let isPictureInPictureActive = false;
 
     let showTimelineMouse = false;
     let showSettings = false;
@@ -361,7 +364,16 @@
                         height="28px"
                     />
                 </button>
-                <button class="gui-bottom-button" onclick={() => {}}>
+                <button
+                    class="gui-bottom-button"
+                    class:disabled-button={!isPictureInPictureAvailable}
+                    class:active-button={isPictureInPictureActive}
+                    onclick={() => {
+                        if (isPictureInPictureAvailable) {
+                            togglePictureInPicture();
+                        }
+                    }}
+                >
                     <img
                         src="./assets/icons/pipButton.svg"
                         alt="PiP"
@@ -776,6 +788,19 @@
     }
 
     .gui-bottom-button:hover {
+        background-color: var(--player-middle-button-select);
+    }
+
+    .disabled-button {
+        opacity: 0.6;
+        cursor: default;
+    }
+
+    .disabled-button:hover {
+        background-color: transparent;
+    }
+
+    .active-button {
         background-color: var(--player-middle-button-select);
     }
 

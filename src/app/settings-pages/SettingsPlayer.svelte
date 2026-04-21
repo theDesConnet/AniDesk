@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from "svelte";
     import Separator from "../components/elements/Separator.svelte";
     import CheckboxElement from "../components/settings/CheckboxElement.svelte";
     import DropdownElement from "../components/settings/DropdownElement.svelte";
@@ -8,6 +9,8 @@
     import { playerSettingsStore } from "../components/stores/pageHistory.js";
 
     let playerSettings;
+    const MIN_INTERFACE_HIDE_DELAY = 1000;
+    const MAX_INTERFACE_HIDE_DELAY = 2000;
 
     playerSettingsStore.subscribe((value) => {
         playerSettings = value;
@@ -28,6 +31,28 @@
                 break;
         }
     }
+
+    function normalizeInterfaceHideDelay(value) {
+        return Math.min(
+            MAX_INTERFACE_HIDE_DELAY,
+            Math.max(
+                MIN_INTERFACE_HIDE_DELAY,
+                Number(value) || utils.playerDefaultSettings.timeHideInterface,
+            ),
+        );
+    }
+
+    onMount(() => {
+        if (!playerSettings) return;
+
+        const normalizedDelay = normalizeInterfaceHideDelay(
+            playerSettings.timeHideInterface,
+        );
+
+        if (playerSettings.timeHideInterface !== normalizedDelay) {
+            updateKey("timeHideInterface", normalizedDelay);
+        }
+    });
 </script>
 
 <div class="flex-column player-settings">
@@ -88,12 +113,16 @@
     <TextboxParam
         title="Время скрытия интерфейса"
         value={playerSettings.timeHideInterface}
-        placeholder="5000"
+        placeholder="2000"
         type="number"
         suffix="ms"
         min="1000"
+        max="2000"
         onChangeCallback={(e) =>
-            updateKey("timeHideInterface", Number(e.target.value))}
+            updateKey(
+                "timeHideInterface",
+                normalizeInterfaceHideDelay(e.target.value),
+            )}
     />
 
     <Separator width="75%" />
