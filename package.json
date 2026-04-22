@@ -52,7 +52,7 @@
   "dependencies": {
     "@xhayper/discord-rpc": "^1.1.8",
     "anime4k-webgpu": "^1.0.0",
-    "anixartjs": "^0.1.7",
+    "anixartjs": "^0.1.8",
     "electron-serve": "^3.0.0",
     "electron-squirrel-startup": "^1.0.1",
     "openurl": "^1.1.1"
