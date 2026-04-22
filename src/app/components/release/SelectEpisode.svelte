@@ -11,16 +11,22 @@
     export let showed;
 
     let currentDubberId,
+        currentDubberName,
         currentSourceId,
         currentSourceName,
         playingSettings,
         episodes;
 
     let dubberList = [];
+    let dubbers = [];
     let backgroundModal = document.querySelector(".modal-background");
 
     anixApi.release.getDubbers(args.id).then((v) => {
-        selectDubber(v.types[0].id);
+        dubbers = v.types;
+        const preferredDubberId = getPreferredDubberId(v.types);
+        if (preferredDubberId !== null) {
+            selectDubber(preferredDubberId);
+        }
         dubberList = v.types.map((x) => ({
             label: x.name,
             value: x.id,
@@ -45,12 +51,52 @@
         playingSettings = value;
     });
 
-    let favoriteSourceName = utils.sourceValues.find(
-        (x) => x.value === playingSettings?.defaultSource,
-    ).label;
+    $: favoriteSourceName =
+        utils.sourceValues.find((x) => x.value === playingSettings?.defaultSource)
+            ?.label ?? null;
+
+    function updatePlayingSettings(patch) {
+        playingSettings = {
+            ...playingSettings,
+            ...patch,
+        };
+        playingSettingsRaw.set(playingSettings);
+    }
+
+    function getPreferredDubberId(types) {
+        if (!types.length) return null;
+        if (!playingSettings?.rememberSelection) return types[0].id;
+
+        const rememberedDubber =
+            types.find((x) => x.id == playingSettings?.lastDubberId) ??
+            types.find((x) => x.name == playingSettings?.lastDubberName);
+
+        return rememberedDubber?.id ?? types[0].id;
+    }
+
+    function getPreferredSource(sources) {
+        if (!sources.length) return null;
+
+        if (playingSettings?.rememberSelection) {
+            const rememberedSource =
+                sources.find((x) => x.id == playingSettings?.lastSourceId) ??
+                sources.find((x) => x.name == playingSettings?.lastSourceName);
+
+            if (rememberedSource) {
+                return rememberedSource;
+            }
+        }
+
+        const matchedDefaultSource = sources.find(
+            (x) => x.name == favoriteSourceName,
+        );
+
+        return matchedDefaultSource ?? sources[0];
+    }
 
     async function selectDubber(id) {
         currentDubberId = id;
+        currentDubberName = dubbers.find((x) => x.id == id)?.name ?? null;
 
         episodes = null;
 
@@ -59,17 +105,10 @@
             currentDubberId,
         );
 
-        let matchedSource = sourceList.sources.find(
-            (x) => x.name == favoriteSourceName,
-        );
+        const preferredSource = getPreferredSource(sourceList.sources);
 
-        currentSourceId = !matchedSource
-            ? sourceList.sources[0].id
-            : matchedSource.id;
-
-        currentSourceName = !matchedSource
-            ? sourceList.sources[0].name
-            : matchedSource.name;
+        currentSourceId = preferredSource?.id ?? null;
+        currentSourceName = preferredSource?.name ?? null;
 
         episodes = getEpisodes();
 
@@ -86,6 +125,10 @@
     }
 
     async function getEpisodes() {
+        if (!currentDubberId || !currentSourceId) {
+            return { episodes: [] };
+        }
+
         return await anixApi.release.getEpisodes(
             args.id,
             currentDubberId,
@@ -207,6 +250,15 @@
                             avaliableQuality[
                                 String(playingSettings.defaultQuality)
                             ]?.src ?? avaliableQuality["720"]?.src;
+
+                        if (playingSettings?.rememberSelection) {
+                            updatePlayingSettings({
+                                lastDubberId: currentDubberId ?? null,
+                                lastDubberName: currentDubberName ?? null,
+                                lastSourceId: currentSourceId ?? null,
+                                lastSourceName: currentSourceName ?? null,
+                            });
+                        }
 
                         updateViewportComponent(11, {
                             src: `${URL.canParse(url) ? url : `https:${url}`}`,

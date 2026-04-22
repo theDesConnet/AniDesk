@@ -42,7 +42,12 @@ module.exports = {
     playingDefaultSettings: {
         defaultQuality: 1080,
         defaultSource: null,
-        disableHistory: false
+        disableHistory: false,
+        rememberSelection: true,
+        lastDubberId: null,
+        lastDubberName: null,
+        lastSourceId: null,
+        lastSourceName: null
     },
 
     upscaleDefaultSettings: {
@@ -98,8 +103,11 @@ module.exports = {
 
     playerSpeedValues: [
         { label: "0.5x", value: 0.5 },
+        { label: "0.75x", value: 0.75 },
         { label: "1x", value: 1.0 },
+        { label: "1.25x", value: 1.25 },
         { label: "1.5x", value: 1.5 },
+        { label: "1.75x", value: 1.75 },
         { label: "2x", value: 2.0 }
     ],
 

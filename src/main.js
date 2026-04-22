@@ -24,8 +24,17 @@ const DefaultSettings = {
   EnableDevTools: false
 };
 
-// Upscale fix on Linux for AMDGPU
-app.commandLine.appendSwitch('enable-unsafe-webgpu');
+// Linux WebGPU/ANGLE can be unstable with only `enable-unsafe-webgpu`,
+// especially on AMDGPU. Prefer the Vulkan ANGLE path explicitly.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('use-gl', 'angle');
+  app.commandLine.appendSwitch('use-angle', 'vulkan');
+  app.commandLine.appendSwitch(
+    'enable-features',
+    'Vulkan,VulkanFromANGLE,DefaultANGLEVulkan',
+  );
+  app.commandLine.appendSwitch('enable-unsafe-webgpu');
+}
 
 const discordRpcClient = new rpc.Client({
   clientId: rpcClientId,

@@ -30,6 +30,7 @@
     import PlayerGui from "../components/player/PlayerGUI.svelte";
     import { onMount, onDestroy } from "svelte";
     import { AniLibriaParser, SibnetParser, KodikParser } from "anixartjs";
+    import { playerSettingsStore } from "../components/stores/pageHistory.js";
     import utils from "../utils";
 
     const upscaleModeMap = {
@@ -55,12 +56,17 @@
         19: ModeCA,
     };
 
+    const PLAYER_LAST_VOLUME_KEY = "PlayerLastVolume";
+    const PLAYER_SAVE_VOLUME_ENABLED_KEY = "PlayerSaveUserVolumeEnabled";
+
     let currentTime,
         durationTime,
         upscaleSettings,
         playerSettings,
         playingSettings,
-        volPercent;
+        volPercent,
+        persistedVolume = null,
+        persistedSaveVolumeEnabled = null;
 
     let defaultCanvasSize = {
         width: screen.width,
@@ -82,12 +88,7 @@
     let isHidden, isPaused, isTimePosClick, isFullscreen;
     let pressedKeys = new Set();
 
-    const playerSettingsRaw = localStorageWritable(
-        "playerSettings",
-        utils.playerDefaultSettings,
-    );
-
-    playerSettingsRaw.subscribe((value) => {
+    playerSettingsStore.subscribe((value) => {
         playerSettings = value;
     });
 
@@ -116,6 +117,31 @@
         await renderUpscale();
     }
 
+    function updatePlayingSettings(patch) {
+        playingSettings = {
+            ...playingSettings,
+            ...patch,
+        };
+        playingSettingsRaw.set(playingSettings);
+    }
+
+    function persistPlayerSettings(nextSettings) {
+        playerSettings = nextSettings;
+        playerSettingsStore.set(nextSettings);
+        localStorage.setItem("playerSettings", JSON.stringify(nextSettings));
+    }
+
+    function rememberPlaybackSelection(source) {
+        if (!playingSettings?.rememberSelection || !source) return;
+
+        updatePlayingSettings({
+            lastDubberId: source.type?.id ?? null,
+            lastDubberName: source.type?.name ?? null,
+            lastSourceId: source.id ?? null,
+            lastSourceName: source.name ?? null,
+        });
+    }
+
     //aspect-16-9
     //aspect-4-3
     //aspect-fit
@@ -124,6 +150,114 @@
     function changeAspectRatio(aspect) {
         playerSettings.defaultAspectRatio = aspect;
         aspectRatio = `aspect-${aspect}`;
+    }
+
+    function clampVolume(value) {
+        return Math.min(1, Math.max(0, Number(value) || 0));
+    }
+
+    function saveVolumePreference(volume) {
+        if (!playerSettings?.saveUserVolume?.enabled) return;
+
+        const normalizedVolume = clampVolume(volume);
+
+        persistPlayerSettings({
+            ...playerSettings,
+            saveUserVolume: {
+                ...playerSettings.saveUserVolume,
+                lastValue: normalizedVolume,
+            },
+        });
+
+        settings.set(PLAYER_LAST_VOLUME_KEY, normalizedVolume);
+        settings.set(PLAYER_SAVE_VOLUME_ENABLED_KEY, true);
+    }
+
+    async function loadPersistedVolume() {
+        const [savedVolume, savedSaveVolumeEnabled] =
+            await Promise.all([
+                settings.get(PLAYER_LAST_VOLUME_KEY),
+                settings.get(PLAYER_SAVE_VOLUME_ENABLED_KEY),
+            ]);
+
+        persistedVolume =
+            typeof savedVolume === "number" ? clampVolume(savedVolume) : null;
+        persistedSaveVolumeEnabled =
+            typeof savedSaveVolumeEnabled === "boolean"
+                ? savedSaveVolumeEnabled
+                : null;
+    }
+
+    function getPersistedPlayerSettings() {
+        try {
+            const rawSettings = localStorage.getItem("playerSettings");
+            return rawSettings ? JSON.parse(rawSettings) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function getEffectivePlayerSettings() {
+        const effectiveSettings = {
+            ...utils.playerDefaultSettings,
+            ...(getPersistedPlayerSettings() ?? playerSettings ?? {}),
+        };
+
+        if (persistedSaveVolumeEnabled !== null) {
+            effectiveSettings.saveUserVolume = {
+                ...effectiveSettings.saveUserVolume,
+                enabled: persistedSaveVolumeEnabled,
+            };
+        }
+
+        return effectiveSettings;
+    }
+
+    function getInitialVolume() {
+        const effectivePlayerSettings = getEffectivePlayerSettings();
+
+        if (
+            effectivePlayerSettings?.saveUserVolume?.enabled &&
+            persistedVolume !== null
+        ) {
+            return persistedVolume;
+        }
+
+        if (effectivePlayerSettings?.saveUserVolume?.enabled) {
+            return clampVolume(
+                effectivePlayerSettings.saveUserVolume.lastValue ??
+                    effectivePlayerSettings.defaultVolume / 100,
+            );
+        }
+
+        return clampVolume(effectivePlayerSettings?.defaultVolume / 100);
+    }
+
+    function syncPersistedVolume() {
+        if (!video || video.muted) return;
+
+        saveVolumePreference(video.volume);
+    }
+
+    function syncVolumeUI(volume = video?.volume ?? 0) {
+        const normalizedVolume = clampVolume(volume);
+
+        volPercent = normalizedVolume * 100;
+        if (volControl) {
+            volControl.value = normalizedVolume;
+        }
+    }
+
+    function setVolume(volume, persist = true) {
+        if (!video) return;
+
+        const normalizedVolume = clampVolume(volume);
+        video.volume = normalizedVolume;
+        syncVolumeUI(normalizedVolume);
+
+        if (persist) {
+            saveVolumePreference(normalizedVolume);
+        }
     }
 
     let loading = true;
@@ -163,6 +297,8 @@
                 ? args.episodes.find((x) => episode.source == x.source["@id"])
                       .source
                 : episode.source;
+
+        rememberPlaybackSelection(source);
 
         switch (source.name) {
             case "Kodik":
@@ -355,6 +491,7 @@
     async function init() {
         mainDiv = await waitForElm(".anidesk-player");
         video = await waitForElm(".player-video");
+        await loadPersistedVolume();
 
         if (Hls.isSupported() && !new URL(args.src).pathname.endsWith(".mp4")) {
             hls = new Hls();
@@ -370,24 +507,17 @@
             video.src = args.src;
         }
 
-        video.volume = playerSettings.saveUserVolume.enabled
-            ? (playerSettings.saveUserVolume.lastValue ??
-              playerSettings.defaultVolume / 100)
-            : playerSettings.defaultVolume / 100;
+        video.volume = getInitialVolume();
 
         volControl = await waitForElm("#volume-position");
 
-        volControl.value = video.volume;
-        volPercent = video.volume * 100;
+        syncVolumeUI(video.volume);
 
         volControl.oninput = () => {
-            video.volume = volControl.value;
-
-            if (playerSettings.saveUserVolume.enabled) {
-                playerSettings.saveUserVolume.lastValue = volControl.value;
-                playerSettingsRaw.set(playerSettings);
-            }
+            setVolume(volControl.value);
         };
+
+        saveVolumePreference(video.volume);
 
         video.onloadedmetadata = () => {
             loading = true;
@@ -402,22 +532,19 @@
             loading = false;
         };
 
+        video.onvolumechange = () => {
+            syncVolumeUI(video.volume);
+            syncPersistedVolume();
+        };
+
         if (avaliableGPU) await renderUpscale();
         await video.play();
 
         window.onwheel = (e) => {
-            switch (true) {
-                case e.deltaY > 0 && volControl.value > 0:
-                    volControl.value = volControl.value - 0.05;
-                    video.volume -= 0.05;
-                    volPercent = video.volume * 100;
-                    break;
-
-                case e.deltaY < 0 && volControl.value < 1:
-                    volControl.value = parseFloat(volControl.value) + 0.05;
-                    video.volume += 0.05;
-                    volPercent = video.volume * 100;
-                    break;
+            if (e.deltaY > 0) {
+                setVolume(video.volume - 0.05);
+            } else if (e.deltaY < 0) {
+                setVolume(video.volume + 0.05);
             }
         };
 
@@ -597,6 +724,8 @@
                   ).source
                 : args.currentEpisode.source;
 
+        rememberPlaybackSelection(source);
+
         analytics.trackEvent("play_anime", {
             source: source.name,
             name: args.currentEpisode.name,
@@ -642,9 +771,16 @@
         video.onloadedmetadata = null;
         video.onwaiting = null;
         video.onplaying = null;
+        video.onvolumechange = null;
+
+        if (video && !video.muted) {
+            syncPersistedVolume();
+        }
         video = null;
 
-        volControl.oninput = null;
+        if (volControl) {
+            volControl.oninput = null;
+        }
         clearTimeout(timeout);
     });
 </script>

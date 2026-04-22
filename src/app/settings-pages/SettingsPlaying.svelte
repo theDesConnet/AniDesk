@@ -21,7 +21,7 @@
 </script>
 
 <div class="flex-column playing-settings">
-    <CheckboxElement title="Запоминать вариант и источник (В разработке)" description="Автоматический переход к варианту и источнику из которого вы последний раз смотрели серию" value={false} disabled={true} onChangeCallback={(e) => {}} />
+    <CheckboxElement title="Запоминать озвучку и источник" description="Автоматически подставлять последнюю выбранную озвучку и источник, если они доступны для релиза." value={playingSettings.rememberSelection ?? true} onChangeCallback={(v) => updateKey('rememberSelection', v)} />
     <CheckboxElement title="Не сохранять историю просмотра" description="Серия не будут отображаться в вашей истории." value={playingSettings.disableHistory} onChangeCallback={(v) => updateKey('disableHistory', v)} />
 
     <Separator width="75%" />
@@ -36,5 +36,4 @@
         margin-top: 40px;
     }
 </style>
-
 

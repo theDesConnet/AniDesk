@@ -8,43 +8,81 @@
 
     export let args;
 
+    const HISTORY_TYPE = 6;
+
     let page = 0;
     let total_count,
         firstData_count = null;
     let allData = [];
-    let firstData = args?.id || args.typeBookmark != 0
-        ? anixApi.profile.getBookmarks({
-              type: args.typeBookmark,
-              id: args?.id ?? null,
-              sort: args.sort,
-              page,
-          })
-        : anixApi.profile.getFavorites({
-              page: 0,
-              sort: args.sort,
-              filter_announce: 0,
-          });
+    let firstData = getPageData(0);
 
     let updateInfo = false;
 
-    async function getMainPage() {
-        let data;
+    function isHistoryType(type = args.typeBookmark) {
+        return type == HISTORY_TYPE;
+    }
 
-        if (args.typeBookmark == 0) {
-            data = await anixApi.profile.getFavorites({
-                page,
+    function getProfileId() {
+        return args?.id ?? anixApi.client.token?.id ?? null;
+    }
+
+    function isCurrentProfileHistory() {
+        const currentProfileId = anixApi.client.token?.id ?? null;
+        const selectedProfileId = getProfileId();
+
+        return !selectedProfileId || selectedProfileId == currentProfileId;
+    }
+
+    async function getHistoryData(pageToLoad = 0) {
+        const profileId = getProfileId();
+
+        if (isCurrentProfileHistory()) {
+            const historyLoaders = [
+                () => anixApi.release.getHistory(pageToLoad),
+                () => anixApi.release.getHistory({ page: pageToLoad }),
+                () => anixApi.release.getHistory(profileId, pageToLoad),
+            ];
+
+            for (const loader of historyLoaders) {
+                try {
+                    const data = await loader();
+                    if (data?.content) {
+                        return data;
+                    }
+                } catch (error) {}
+            }
+        }
+
+        const profile = await anixApi.profile.info(profileId);
+        return {
+            content: profile.profile.history ?? [],
+            total_count: profile.profile.history?.length ?? 0,
+        };
+    }
+
+    function getPageData(pageToLoad = page) {
+        if (isHistoryType()) {
+            return getHistoryData(pageToLoad);
+        }
+
+        if (args.typeBookmark == 0 && !args?.id) {
+            return anixApi.profile.getFavorites({
+                page: pageToLoad,
                 sort: args.sort,
                 filter_announce: 0,
             });
-        } else {
-            data = await anixApi.profile.getBookmarks({
-                type: args.typeBookmark,
-                id: args?.id ?? null,
-                sort: args.sort,
-                page,
-            });
         }
 
+        return anixApi.profile.getBookmarks({
+            type: args.typeBookmark,
+            id: args?.id ?? null,
+            sort: args.sort,
+            page: pageToLoad,
+        });
+    }
+
+    async function getMainPage() {
+        let data = await getPageData(page);
         allData = allData.concat(data.content);
         updateInfo = false;
     }
@@ -64,30 +102,11 @@
         args.typeBookmark = type;
         page = 0;
         allData = [];
-        switch (type) {
-            case 0:
-                firstData = anixApi.profile.getFavorites({
-                    page: 0,
-                    sort: args.sort,
-                    filter_announce: 0,
-                });
-                break;
+        firstData = getPageData(0);
 
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                firstData = anixApi.profile.getBookmarks({
-                    type: args.typeBookmark,
-                    id: args?.id ?? null,
-                    sort: args.sort,
-                    page,
-                });
-                break;
+        if (viewport) {
+            viewport.scrollTop = 0;
         }
-
-        viewport.scrollTop = 0;
     }
 
     const scrollEvent = async (e) => {
@@ -132,6 +151,13 @@
         {/if}
         <button
             class="releases-type-title flex-column"
+            class:selected={args.typeBookmark == HISTORY_TYPE}
+            onclick={() => setReleasesType(HISTORY_TYPE)}
+        >
+            История
+        </button>
+        <button
+            class="releases-type-title flex-column"
             class:selected={args.typeBookmark == 1}
             onclick={() => setReleasesType(1)}
         >
@@ -174,22 +200,19 @@
     >
         <div class="flex-row releases-title">
             <span>Всего {total_count}</span>
-            <DropdownButton values={utils.bookmarkSortValues} value={args.sort} width={300} onChange={(e, v) => {
-                args.sort = v;
-                page = 0;
-                allData = [];
-                firstData = anixApi.profile.getBookmarks({
-                    type: args.typeBookmark,
-                    id: args?.id ?? null,
-                    sort: args.sort,
-                    page,
-                });
-            }}/>
+            {#if !isHistoryType()}
+                <DropdownButton values={utils.bookmarkSortValues} value={args.sort} width={300} onChange={(e, v) => {
+                    args.sort = v;
+                    page = 0;
+                    allData = [];
+                    firstData = getPageData(0);
+                }}/>
+            {/if}
         </div>
         {#await firstData}
             <Preloader />
         {:then Releases}
-            {setTotalCount(Releases.total_count)}
+            {setTotalCount(Releases.total_count ?? Releases.content.length)}
             {setFirstDataCount(Releases.content.length)}
             {#each Releases.content as Release}
                 <AnimeRowItem anime={Release} inModal={args?.isModal} />
