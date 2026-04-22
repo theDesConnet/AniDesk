@@ -58,6 +58,8 @@
 
     const PLAYER_LAST_VOLUME_KEY = "PlayerLastVolume";
     const PLAYER_SAVE_VOLUME_ENABLED_KEY = "PlayerSaveUserVolumeEnabled";
+    const MIN_INTERFACE_HIDE_DELAY = 1000;
+    const MAX_INTERFACE_HIDE_DELAY = 2000;
 
     let currentTime,
         durationTime,
@@ -65,6 +67,7 @@
         playerSettings,
         playingSettings,
         volPercent,
+        previousDocumentTitle = "",
         persistedVolume = null,
         persistedSaveVolumeEnabled = null;
 
@@ -85,7 +88,13 @@
 
     let progressPercent, loadedPercent;
 
-    let isHidden, isPaused, isTimePosClick, isFullscreen;
+    let isHidden,
+        isPaused,
+        isMuted,
+        isTimePosClick,
+        isFullscreen,
+        isPictureInPictureAvailable = false,
+        isPictureInPictureActive = false;
     let pressedKeys = new Set();
 
     playerSettingsStore.subscribe((value) => {
@@ -260,6 +269,57 @@
         }
     }
 
+    function syncPictureInPictureAvailability() {
+        isPictureInPictureAvailable = Boolean(
+            document.pictureInPictureEnabled &&
+                video &&
+                typeof video.requestPictureInPicture === "function",
+        );
+    }
+
+    async function togglePictureInPicture() {
+        if (!video) return;
+
+        syncPictureInPictureAvailability();
+        if (!isPictureInPictureAvailable) return;
+
+        try {
+            if (document.pictureInPictureElement === video) {
+                await document.exitPictureInPicture();
+            } else {
+                await video.requestPictureInPicture();
+            }
+        } catch (error) {
+            console.warn("Не удалось переключить Picture-in-Picture.", error);
+        }
+    }
+
+    function syncPictureInPictureTitle(isActive) {
+        if (typeof document === "undefined") return;
+
+        if (isActive) {
+            previousDocumentTitle = document.title;
+            document.title = "AniDesk";
+            return;
+        }
+
+        if (previousDocumentTitle) {
+            document.title = previousDocumentTitle;
+            previousDocumentTitle = "";
+        }
+    }
+
+    function getInterfaceHideDelay() {
+        return Math.min(
+            MAX_INTERFACE_HIDE_DELAY,
+            Math.max(
+                MIN_INTERFACE_HIDE_DELAY,
+                Number(playerSettings?.timeHideInterface) ||
+                    utils.playerDefaultSettings.timeHideInterface,
+            ),
+        );
+    }
+
     let loading = true;
 
     function hideOnIdle() {
@@ -271,7 +331,7 @@
             if (!isHidden) {
                 isHidden = true;
             }
-        }, playerSettings.timeHideInterface);
+        }, getInterfaceHideDelay());
 
         if (isHidden) {
             isHidden = false;
@@ -291,12 +351,29 @@
     });
 
     async function playVideo(episode) {
+        if (!episode) return;
+
+        if (
+            video &&
+            currentEpisode &&
+            currentEpisode.position !== episode.position &&
+            !video.paused
+        ) {
+            video.pause();
+        }
+
+        loading = true;
+        currentEpisode = episode;
+        args.currentEpisode = episode;
+
         let avaliableQuality, link;
         let source =
             typeof episode.source == "number"
                 ? args.episodes.find((x) => episode.source == x.source["@id"])
-                      .source
+                      ?.source
                 : episode.source;
+
+        if (!source) return;
 
         rememberPlaybackSelection(source);
 
@@ -373,12 +450,12 @@
             anixApi.release.markEpisodeAsWatched(
                 args.release.id,
                 args.episodes[0].source.id,
-                currentEpisode.position,
+                episode.position,
             );
             anixApi.release.addToHistory(
                 args.release.id,
                 args.episodes[0].source.id,
-                currentEpisode.position,
+                episode.position,
             );
         }
 
@@ -450,6 +527,7 @@
         const qualitySrc = args.avaliableQuality[String(quality)]?.src;
         if (!qualitySrc) return;
 
+        loading = true;
         const url = URL.canParse(qualitySrc)
             ? qualitySrc
             : `https:${qualitySrc}`;
@@ -508,10 +586,12 @@
         }
 
         video.volume = getInitialVolume();
+        isMuted = video.muted;
 
         volControl = await waitForElm("#volume-position");
 
         syncVolumeUI(video.volume);
+        syncPictureInPictureAvailability();
 
         volControl.oninput = () => {
             setVolume(volControl.value);
@@ -533,8 +613,17 @@
         };
 
         video.onvolumechange = () => {
+            isMuted = video.muted;
             syncVolumeUI(video.volume);
             syncPersistedVolume();
+        };
+        video.onenterpictureinpicture = () => {
+            isPictureInPictureActive = true;
+            syncPictureInPictureTitle(true);
+        };
+        video.onleavepictureinpicture = () => {
+            isPictureInPictureActive = false;
+            syncPictureInPictureTitle(false);
         };
 
         if (avaliableGPU) await renderUpscale();
@@ -772,9 +861,15 @@
         video.onwaiting = null;
         video.onplaying = null;
         video.onvolumechange = null;
+        video.onenterpictureinpicture = null;
+        video.onleavepictureinpicture = null;
+        syncPictureInPictureTitle(false);
 
         if (video && !video.muted) {
             syncPersistedVolume();
+        }
+        if (document.pictureInPictureElement === video) {
+            document.exitPictureInPicture().catch(() => {});
         }
         video = null;
 
@@ -808,17 +903,37 @@
         {changeUpscale}
         {upscaleEnabled}
         {changeAspectRatio}
+        {togglePictureInPicture}
+        {isPictureInPictureAvailable}
+        {isPictureInPictureActive}
+        {isMuted}
+        isLoading={loading}
         aspectRatio={utils.aspectRatioValues.find(
             (x) => x.value == playerSettings.defaultAspectRatio,
         ).label}
         bind:volumePercent={volPercent}
     />
 
-    <span class:hide={!loading} class="loader"></span>
+    {#if isPictureInPictureActive}
+        <div class="pip-placeholder flex-column">
+            <span class="pip-placeholder-badge">PiP</span>
+            <span class="pip-placeholder-title">
+                Режим "картинка в картинке" включен
+            </span>
+            <span class="pip-placeholder-text">
+                Видео вынесено в отдельное окно. Встроенный плеер временно
+                скрыт, чтобы картинка не дублировалась.
+            </span>
+            <button class="pip-placeholder-button" onclick={togglePictureInPicture}>
+                Вернуть видео в приложение
+            </button>
+        </div>
+    {/if}
 
     {#if avaliableGPU}
         <canvas
             class="player-canvas {aspectRatio}"
+            class:pip-hidden={isPictureInPictureActive}
             width={screen.width}
             height={screen.height}
         ></canvas>
@@ -827,7 +942,9 @@
         class="player-video"
         crossorigin="anonymous"
         class:full={!avaliableGPU}
-        class:hide={avaliableGPU}
+        class:canvas-source={avaliableGPU}
+        class:pip-hidden={isPictureInPictureActive}
+        playsinline
     ></video>
 </div>
 
@@ -836,31 +953,6 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-    }
-
-    .loader {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 30px;
-        height: 30px;
-        border: 3px solid var(--player-timeline-progress-color);
-        border-bottom-color: transparent;
-        border-radius: 50%;
-        display: inline-block;
-        box-sizing: border-box;
-        animation: rotation 1s linear infinite;
-        z-index: 1;
-    }
-
-    @keyframes rotation {
-        0% {
-            transform: translate(-50%, -50%) rotate(0deg);
-        }
-        100% {
-            transform: translate(-50%, -50%) rotate(360deg);
-        }
     }
 
     canvas,
@@ -874,6 +966,75 @@
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
+    }
+
+    .player-video {
+        width: 100%;
+        height: 100%;
+    }
+
+    .pip-hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+    }
+
+    .player-video.canvas-source {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .pip-placeholder {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 32px;
+        text-align: center;
+        background:
+            radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 45%),
+            rgba(0, 0, 0, 0.82);
+        color: var(--main-text-color);
+    }
+
+    .pip-placeholder-badge {
+        padding: 4px 10px;
+        border-radius: 999px;
+        background-color: rgba(255, 255, 255, 0.14);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+    }
+
+    .pip-placeholder-title {
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .pip-placeholder-text {
+        max-width: 520px;
+        color: var(--secondary-text-color);
+        line-height: 1.5;
+    }
+
+    .pip-placeholder-button {
+        margin-top: 4px;
+        padding: 14px 22px;
+        border-radius: 999px;
+        background-color: var(--alt-background-color);
+        color: var(--main-text-color);
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .pip-placeholder-button:hover {
+        background-color: var(--select-button-left-color);
+    }
+
+    .pip-placeholder-button:active {
+        background-color: var(--click-on-button-player-color);
     }
 
     .aspect-16-9 {
@@ -890,5 +1051,6 @@
 
     .anidesk-player {
         background-color: black;
+        position: relative;
     }
 </style>

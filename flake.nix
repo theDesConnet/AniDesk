@@ -30,7 +30,7 @@
             version = "0.0.1-beta.7";
 
             src = ./.;
-            npmDepsHash = "sha256-77QcTHHZjHPZ40z8yrGYfZLVDIQoP1utSEBYIIkG5ew=";
+            npmDepsHash = "sha256-hNZL9kBaydNu6D29sD3g3Zs6i4piCPz9naNGPw7gv+A=";
             npmBuildScript = "build";
             makeCacheWritable = true;
 
@@ -52,6 +52,7 @@
               makeWrapper ${lib.getExe electron} $out/bin/anidesk \
                 --add-flags "$out/share/anidesk" \
                 --set ELECTRON_FORCE_IS_PACKAGED 1 \
+                --set ELECTRON_OVERRIDE_DIST_PATH "${electron}/libexec" \
                 --run "cd $out/share/anidesk"
 
               runHook postInstall

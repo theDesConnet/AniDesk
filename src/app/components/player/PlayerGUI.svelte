@@ -1,5 +1,4 @@
 <script>
-    import { onDestroy, onMount } from "svelte";
     import PlayerDropdown from "./PlayerDropdown.svelte";
     import PlayerSettings from "./PlayerSettings.svelte";
 
@@ -22,15 +21,50 @@
     export let upscaleEnabled;
     export let changeAspectRatio;
     export let aspectRatio;
+    export let togglePictureInPicture;
+    export let isPictureInPictureAvailable = false;
+    export let isPictureInPictureActive = false;
+    export let isMuted = false;
+    export let isLoading = false;
 
     let showTimelineMouse = false;
     let showSettings = false;
     let mousePosPercent = 0;
     let dropdownElements, dropdownType;
-    let relatedMaxPage = 0;
+    let activeDropdownTrigger = null;
     export let volumePercent = 50;
 
-    function onClickGui() {
+    const SKIP_OPENING_SECONDS = 85;
+
+    $: activeEpisode = cEpisode ?? args?.currentEpisode ?? args?.episodes?.[0];
+    $: currentEpisodeIndex =
+        args?.episodes?.findIndex((x) => x.position == activeEpisode?.position) ??
+        -1;
+    $: prevEpisode =
+        currentEpisodeIndex > 0 ? args.episodes[currentEpisodeIndex - 1] : null;
+    $: nextEpisode =
+        currentEpisodeIndex >= 0
+            ? args.episodes[currentEpisodeIndex + 1]
+            : null;
+    $: activeSource =
+        (typeof activeEpisode?.source === "object" && activeEpisode?.source) ||
+        args?.episodes?.find(
+            (x) =>
+                x?.source?.["@id"] == activeEpisode?.source ||
+                x?.source?.id == activeEpisode?.source,
+        )?.source ||
+        args?.episodes?.[0]?.source ||
+        null;
+    $: activeEpisodeLabel = activeEpisode?.name ?? "Серии";
+    $: activeDubberLabel = activeSource?.type?.name ?? "Озвучка";
+
+    function togglePlaybackState() {
+        if (!video) return;
+
+        video.paused ? video.play() : video.pause();
+    }
+
+    function onClickGui(e) {
         if (showSettings) {
             showSettings = false;
         }
@@ -38,6 +72,22 @@
         if (dropdownShowed) {
             dropdownShowed = false;
         }
+
+        const interactiveSelector = [
+            ".gui-top-bar",
+            ".gui-dropdown-left",
+            ".gui-settings-dropdown",
+            ".gui-timeline",
+            ".bottom-content",
+            "button",
+            "input",
+        ].join(", ");
+
+        if (e.target.closest(interactiveSelector)) {
+            return;
+        }
+
+        togglePlaybackState();
     }
 
     async function onElementClick(e) {
@@ -59,6 +109,7 @@
                     args.episodes = argsElement.elements.map((x) => x.value);
 
                 cEpisode = argsElement.value;
+                args.currentEpisode = argsElement.value;
                 playVideo(argsElement.value);
                 argsElement.close();
                 break;
@@ -155,17 +206,30 @@
 
     function showEpisodesDropdown(e) {
         e.stopPropagation();
+        if (dropdownShowed && activeDropdownTrigger === "episodes") {
+            dropdownShowed = false;
+            activeDropdownTrigger = null;
+            return;
+        }
+
         dropdownElements = args.episodes.map((x) => ({
             title: x.name,
             subtitle: `${args.episodes[0].source.type.name} | ${args.episodes[0].source.name}`,
             value: x,
         }));
         dropdownType = "episodes";
+        activeDropdownTrigger = "episodes";
         dropdownShowed = true;
     }
 
     async function showDubbersDropdown(e) {
         e.stopPropagation();
+        if (dropdownShowed && activeDropdownTrigger === "dubbers") {
+            dropdownShowed = false;
+            activeDropdownTrigger = null;
+            return;
+        }
+
         const dubbers = await anixApi.release.getDubbers(args.release.id);
         dropdownElements = dubbers.types.map((z) => ({
             title: z.name,
@@ -177,27 +241,8 @@
             value: z,
         }));
         dropdownType = "dubbers";
+        activeDropdownTrigger = "dubbers";
 
-        dropdownShowed = true;
-    }
-
-    async function showRelatedReleasesDropdown() {
-        const related = await anixApi.release.getRelatedReleases(
-            args.release.related.id,
-            0,
-        );
-        relatedMaxPage = related.total_pages;
-        dropdownElements = related.content.map((b) => ({
-            title: b.title_ru,
-            subtitle: b.title_original,
-            description: b.description,
-            image: {
-                type: "poster",
-                src: b.image,
-            },
-            value: b,
-        }));
-        dropdownType = "related";
         dropdownShowed = true;
     }
 
@@ -261,6 +306,49 @@
         isScrubbing = false;
         video.play();
     }
+
+    function togglePlayback(e) {
+        e.stopPropagation();
+        togglePlaybackState();
+        e.currentTarget.blur();
+    }
+
+    async function playAdjacentEpisode(offset, e) {
+        e.stopPropagation();
+        if (!args?.episodes?.length || currentEpisodeIndex < 0) return;
+
+        const nextTargetEpisode = args.episodes[currentEpisodeIndex + offset];
+        if (!nextTargetEpisode) return;
+
+        cEpisode = nextTargetEpisode;
+        args.currentEpisode = nextTargetEpisode;
+        try {
+            await playVideo(cEpisode);
+        } catch (error) {
+            console.warn("Не удалось переключить серию.", error);
+        }
+    }
+
+    function skipOpening(e) {
+        e.stopPropagation();
+        if (!video || !video.duration) return;
+
+        const nextTime = Math.min(
+            video.duration || video.currentTime + SKIP_OPENING_SECONDS,
+            video.currentTime + SKIP_OPENING_SECONDS,
+        );
+
+        video.currentTime = nextTime;
+        progressPercent = (video.currentTime / video.duration) * 100;
+        currentTime = utils.returnFormatedTime(video.currentTime);
+    }
+
+    function toggleMute(e) {
+        e.stopPropagation();
+        if (!video) return;
+
+        video.muted = !video.muted;
+    }
 </script>
 
 <div
@@ -272,26 +360,76 @@
     onclick={onClickGui}
 >
     <div class="gui-top-bar">
-        <div class="gui-title flex-column">
-            <span class="gui-release-title">{args.release.title_ru}</span>
-            <span class="gui-release-episode">
-                {args.episodes[0].source.type.name} | {cEpisode.name}
-            </span>
+        <div class="gui-top-content">
+            <div class="gui-title flex-column">
+                <span class="gui-release-title">{args.release.title_ru}</span>
+                <div class="gui-release-episode">
+                    <button
+                        class="gui-release-meta-button"
+                        onclick={showDubbersDropdown}
+                        title="Открыть список озвучек"
+                    >
+                        {activeDubberLabel}
+                    </button>
+                    <span class="gui-release-meta-separator">|</span>
+                    <button
+                        class="gui-release-meta-button"
+                        onclick={showEpisodesDropdown}
+                        title="Открыть список серий"
+                    >
+                        {activeEpisodeLabel}
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="gui-middle-bar">
         <button
-            class="gui-play-button"
+            class="gui-side-button"
+            class:disabled-button={!prevEpisode}
+            disabled={!prevEpisode}
             onclick={(e) => {
-                video.paused ? video.play() : video.pause();
-                e.target.blur();
+                if (prevEpisode) {
+                    playAdjacentEpisode(-1, e);
+                }
             }}
         >
-            {#if isPaused}
-                ▶
+            <img
+                class="rotated-icon"
+                src="./assets/icons/next.svg"
+                alt="previous episode"
+                width="16px"
+                height="16px"
+            />
+        </button>
+        <button class="gui-play-button" onclick={togglePlayback}>
+            {#if isLoading}
+                <span class="play-loader"></span>
+            {:else if isPaused}
+                <span class="play-icon"></span>
             {:else}
-                ❚❚
+                <span class="pause-icon">
+                    <span></span>
+                    <span></span>
+                </span>
             {/if}
+        </button>
+        <button
+            class="gui-side-button"
+            class:disabled-button={!nextEpisode}
+            disabled={!nextEpisode}
+            onclick={(e) => {
+                if (nextEpisode) {
+                    playAdjacentEpisode(1, e);
+                }
+            }}
+        >
+            <img
+                src="./assets/icons/next.svg"
+                alt="next episode"
+                width="16px"
+                height="16px"
+            />
         </button>
     </div>
     <div class="gui-dropdown-left flew-column">
@@ -319,7 +457,7 @@
     </div>
     <div class="gui-bottom-bar flex-column">
         <div class="top-content container flex-row">
-            <div class="left-content">
+            <div class="bottom-status-row">
                 <div class="time-container">
                     <div class="time-info flex-row">
                         <span id="current-time">{currentTime ?? "00:00"}</span>
@@ -328,64 +466,141 @@
                         >
                     </div>
                 </div>
-            </div>
-            <div class="right-content flex-row">
-                <div class="gui-volume-control">
-                    <input
-                        type="range"
-                        id="volume-position"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        class="volume-input"
-                        style="--volume-position: {volumePercent}%"
-                        oninput={function () {
-                            volumePercent =
-                                ((this.value - this.min) /
-                                    (this.max - this.min)) *
-                                100;
+                <div class="bottom-secondary-actions flex-row">
+                    <div
+                        class="gui-volume-shell"
+                        onclick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            class="player-icon-button gui-volume-button"
+                            class:active-button={!isMuted && volumePercent > 0}
+                            onclick={toggleMute}
+                            title={isMuted ? "Включить звук" : "Выключить звук"}
+                        >
+                            {#if isMuted}
+                                <svg
+                                    class="utility-icon volume-symbol"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M4 10.5C4 9.94772 4.44772 9.5 5 9.5H8.08579L12.2929 5.29289C12.9229 4.66292 14 5.10919 14 6V18C14 18.8908 12.9229 19.3371 12.2929 18.7071L8.08579 14.5H5C4.44772 14.5 4 14.0523 4 13.5V10.5Z"
+                                        fill="currentColor"
+                                    />
+                                    <path
+                                        d="M17.25 9.25L20.75 12.75M20.75 9.25L17.25 12.75"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                    />
+                                </svg>
+                            {:else}
+                                <svg
+                                    class="utility-icon volume-symbol"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M4 10.5C4 9.94772 4.44772 9.5 5 9.5H8.08579L12.2929 5.29289C12.9229 4.66292 14 5.10919 14 6V18C14 18.8908 12.9229 19.3371 12.2929 18.7071L8.08579 14.5H5C4.44772 14.5 4 14.0523 4 13.5V10.5Z"
+                                        fill="currentColor"
+                                    />
+                                    <path
+                                        d="M17.5 9.5C18.3284 10.3284 18.7938 11.4519 18.7938 12.6235C18.7938 13.7951 18.3284 14.9186 17.5 15.747"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                    />
+                                    <path
+                                        d="M15.75 7.25C17.1753 8.67525 17.976 10.6084 17.976 12.624C17.976 14.6397 17.1753 16.5728 15.75 17.998"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                    />
+                                </svg>
+                            {/if}
+                        </button>
+                        <div class="gui-volume-slider">
+                            <input
+                                type="range"
+                                id="volume-position"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                class="volume-input"
+                                style="--volume-position: {volumePercent}%"
+                                oninput={function () {
+                                    volumePercent =
+                                        ((this.value - this.min) /
+                                            (this.max - this.min)) *
+                                        100;
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <button
+                        class="player-icon-button"
+                        onclick={skipOpening}
+                        title="Пропуск опенинга"
+                    >
+                        <img
+                            class="utility-icon"
+                            src="./assets/icons/skipOp.svg"
+                            alt="skip opening"
+                        />
+                    </button>
+                    <button
+                        class="player-icon-button"
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            showSettings = !showSettings;
                         }}
-                    />
+                        title="Настройки"
+                    >
+                        <img
+                            class="utility-icon"
+                            src="./assets/icons/settingsFilled.svg"
+                            alt="settings"
+                        />
+                    </button>
+                    <button
+                        class="player-icon-button"
+                        class:disabled-button={!isPictureInPictureAvailable}
+                        class:active-button={isPictureInPictureActive}
+                        onclick={() => {
+                            if (isPictureInPictureAvailable) {
+                                togglePictureInPicture();
+                            }
+                        }}
+                        title="PiP"
+                    >
+                        <img
+                            class="utility-icon"
+                            src="./assets/icons/pipButton.svg"
+                            alt="PiP"
+                        />
+                    </button>
+                    <button
+                        class="player-icon-button"
+                        onclick={() => {
+                            isFullscreen
+                                ? elecWindow.exitFullscreen()
+                                : elecWindow.enterFullscreen();
+                        }}
+                        title="Полный экран"
+                    >
+                        <img
+                            class="utility-icon"
+                            src="./assets/icons/{isFullscreen
+                                ? 'exitFullscreen.svg'
+                                : 'joinFullscreen.svg'}"
+                            alt="fullscreen"
+                        />
+                    </button>
                 </div>
-                <button
-                    class="gui-bottom-button"
-                    onclick={(e) => {
-                        e.stopPropagation();
-                        showSettings = !showSettings;
-                    }}
-                >
-                    <img
-                        src="./assets/icons/settingsFilled.svg"
-                        alt="settings"
-                        width="28px"
-                        height="28px"
-                    />
-                </button>
-                <button class="gui-bottom-button" onclick={() => {}}>
-                    <img
-                        src="./assets/icons/pipButton.svg"
-                        alt="PiP"
-                        width="30px"
-                        height="28px"
-                    />
-                </button>
-                <button
-                    class="gui-bottom-button"
-                    onclick={() => {
-                        isFullscreen
-                            ? elecWindow.exitFullscreen()
-                            : elecWindow.enterFullscreen();
-                    }}
-                >
-                    <img
-                        src="./assets/icons/{isFullscreen
-                            ? 'exitFullscreen.svg'
-                            : 'joinFullscreen.svg'}"
-                        alt="fullscreen"
-                        width="20px"
-                        height="20px"
-                    />
-                </button>
             </div>
         </div>
         <div class="middle-content container flex-row">
@@ -417,81 +632,14 @@
                 </div>
             </div>
         </div>
-        <div class="bottom-content container flex-row">
-            <div class="left-content flex-row">
-                <button
-                    class="player-bottom-button"
-                    onclick={showEpisodesDropdown}
-                >
-                    <img src="./assets/icons/episodeIcon.svg" alt="episode" />
-                    <span>Серии</span>
-                </button>
-                <button
-                    class="player-bottom-button"
-                    onclick={showDubbersDropdown}
-                >
-                    <img
-                        src="./assets/icons/dubbersIcon.svg"
-                        width="22px"
-                        alt="dubbers"
-                    />
-                    <span>Озвучка</span>
-                </button>
-                <button
-                    class="player-bottom-button"
-                    class:bottom-disabled={args.release.related_count == 0}
-                    onclick={() => {
-                        if (args.release.related_count > 0)
-                            showRelatedReleasesDropdown();
-                    }}
-                >
-                    <img src="./assets/icons/linkedRelease.svg" alt="linked" />
-                    <span>Связанные релизы</span>
-                </button>
-            </div>
-            <div class="right-content flex-row">
-                <button
-                    class="player-bottom-button"
-                    onclick={() => {
-                        video.currentTime = video.currentTime + 85;
-                        progressPercent =
-                            (video.currentTime / video.duration) * 100;
-                        currentTime = utils.returnFormatedTime(
-                            video.currentTime,
-                        );
-                    }}
-                >
-                    <img src="./assets/icons/skipOp.svg" alt="skipOp" />
-                    <span>Пропуск опенинга</span>
-                </button>
-                <button
-                    class="player-bottom-button"
-                    class:bottom-disabled={cEpisode.position ==
-                        args.episodes.length}
-                    onclick={async () => {
-                        let e = args.episodes[args.episodes.findIndex(
-                            (x) => x.position == cEpisode.position,
-                        ) + 1];
-
-                        if (e) {
-                            cEpisode = e;
-                            await playVideo(cEpisode);
-                        }
-                    }}
-                >
-                    <img src="./assets/icons/next.svg" alt="next" />
-                    <span
-                        >{args.episodes[args.episodes.findIndex(
-                            (x) => x.position == cEpisode.position,
-                        ) + 1]?.name ?? "Серия отсутствует"}</span
-                    >
-                </button>
-            </div>
-        </div>
     </div>
 </div>
 
 <style>
+    :global(:root) {
+        --player-utility-button-size: 40px;
+    }
+
     .player-gui {
         width: 100%;
         height: 100%;
@@ -504,15 +652,16 @@
 
     .gui-dropdown-left {
         position: absolute;
-        bottom: 140px;
+        top: 78px;
+        left: 0;
         z-index: 3;
     }
 
     .gui-settings-dropdown {
         position: absolute;
-        bottom: 140px;
-        right: 10px;
-        z-index: 3;
+        bottom: 88px;
+        right: 15px;
+        z-index: 5;
     }
 
     .bottom-disabled {
@@ -532,18 +681,18 @@
     }
 
     .player-bottom-button {
-        height: 43px;
+        height: 40px;
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 0 5px;
-        padding: 0 20px;
+        margin: 0;
+        padding: 0 18px;
         border-radius: 40px;
-        background-color: var(--alt-background-color);
+        background-color: rgba(26, 26, 26, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         transition: background-color 0.15s ease-in-out;
-        margin-bottom: 12px;
-        margin-top: 8px;
         color: var(--main-text-color);
+        box-sizing: border-box;
     }
 
     .player-bottom-button:hover {
@@ -556,14 +705,6 @@
 
     .player-bottom-button img {
         margin-right: 8px;
-    }
-
-    .player-bottom-button:first-child {
-        margin-left: 4px;
-    }
-
-    .player-bottom-button:last-child {
-        margin-right: 4px;
     }
 
     .player-bottom-button span {
@@ -629,10 +770,6 @@
         left: 0;
     }
 
-    .left-content {
-        margin-left: 15px;
-    }
-
     .time-info {
         align-items: center;
         justify-content: center;
@@ -666,12 +803,12 @@
 
     .gui-bottom-bar {
         position: absolute;
-        bottom: 0;
+        bottom: 10px;
         left: 0;
         right: 0;
         display: flex;
         z-index: 3;
-        justify-content: space-between;
+        justify-content: flex-end;
         color: var(--main-text-color);
         font-size: 12px;
         align-items: center;
@@ -686,8 +823,9 @@
         right: 0;
         z-index: 3;
         display: flex;
-        width: 100%;
-        justify-content: center;
+        width: max-content;
+        margin: 0 auto;
+        gap: 14px;
         align-items: center;
     }
 
@@ -695,6 +833,17 @@
         height: 100%;
         display: flex;
         align-items: end;
+    }
+
+    .bottom-status-row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 15px 8px;
+        box-sizing: border-box;
+        flex-wrap: wrap;
     }
 
     .gui-timeline {
@@ -711,41 +860,125 @@
     .gui-play-button {
         display: flex;
         border-radius: 100%;
-        width: 60px;
-        height: 60px;
+        width: 72px;
+        height: 72px;
         text-align: center;
         justify-content: center;
         align-items: center;
         background-color: var(--player-middle-button);
         transition: background-color 0.2s ease-in-out;
         color: var(--main-text-color);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        box-sizing: border-box;
     }
 
     .gui-play-button:hover {
         background-color: var(--player-middle-button-select);
     }
 
-    .gui-volume-control {
+    .play-loader {
+        width: 28px;
+        height: 28px;
+        border: 3px solid currentColor;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        box-sizing: border-box;
+        animation: play-loader-rotation 0.8s linear infinite;
+    }
+
+    .gui-side-button {
         display: flex;
-        margin-right: 8px;
-        text-align: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 100%;
         justify-content: center;
         align-items: center;
+        background-color: rgba(26, 26, 26, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition:
+            background-color 0.2s ease-in-out,
+            transform 0.2s ease-in-out;
+        box-sizing: border-box;
+    }
+
+    .gui-side-button:hover {
+        background-color: rgba(255, 255, 255, 0.18);
+        transform: scale(1.03);
+    }
+
+    .gui-top-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 4;
+        padding: 20px 24px 0;
+        box-sizing: border-box;
+    }
+
+    .gui-top-content {
+        display: flex;
+        align-items: flex-start;
     }
 
     .gui-title {
-        margin-left: 35px;
-        margin-top: 20px;
+        margin: 0;
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     .gui-release-title {
         font-size: 24px;
         color: #fff;
         font-weight: 400;
+        line-height: 1.15;
+    }
+
+    .gui-release-meta-button,
+    .gui-release-meta-separator {
+        color: var(--secondary-text-color);
+        font-size: 15px;
+        line-height: 1.35;
+    }
+
+    .gui-release-meta-button {
+        display: block;
+        flex: 0 1 auto;
+        min-width: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        text-align: left;
+        text-decoration: none;
+        transition: color 0.15s ease-in-out;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .gui-release-meta-button:hover {
+        color: var(--main-text-color);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .gui-release-meta-button:active {
+        color: var(--main-text-color);
+    }
+
+    .gui-release-meta-separator {
+        margin: 0 6px;
+        user-select: none;
     }
 
     .gui-release-episode {
-        color: var(--secondary-text-color);
+        display: flex;
+        align-items: center;
+        width: fit-content;
+        max-width: min(100%, 560px);
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
     }
 
     .gui-fullscreen {
@@ -769,28 +1002,165 @@
         border-radius: 100%;
         display: flex;
         margin: 3px;
+        background-color: rgba(26, 26, 26, 0.82);
         transition: background-color 0.2s ease-in-out;
         justify-content: center;
         align-items: center;
         color: var(--main-text-color);
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .gui-bottom-button:hover {
         background-color: var(--player-middle-button-select);
     }
 
-    .container {
-        width: 100%;
+    .disabled-button {
+        opacity: 0.6;
+        cursor: default;
     }
 
-    .right-content {
+    .disabled-button:hover {
+        background-color: transparent;
+    }
+
+    .active-button {
+        background-color: var(--player-middle-button-select);
+    }
+
+    .container {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bottom-secondary-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .bottom-secondary-actions {
         margin-left: auto;
-        margin-right: 10px;
+        justify-content: flex-end;
+    }
+
+    .player-icon-button {
+        width: var(--player-utility-button-size);
+        height: var(--player-utility-button-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        border-radius: 100%;
+        background-color: rgba(26, 26, 26, 0.82);
+        color: var(--main-text-color);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: background-color 0.2s ease-in-out;
+        box-sizing: border-box;
+        flex: 0 0 var(--player-utility-button-size);
+    }
+
+    .utility-icon {
+        width: 20px;
+        height: 20px;
+        display: block;
+        flex: 0 0 20px;
+        object-fit: contain;
+    }
+
+    .player-icon-button:hover {
+        background-color: var(--player-middle-button-select);
+    }
+
+    .gui-volume-shell {
+        display: flex;
+        align-items: center;
+        width: var(--player-utility-button-size);
+        height: var(--player-utility-button-size);
+        margin: 0;
+        padding-right: 0;
+        border-radius: 999px;
+        background-color: rgba(26, 26, 26, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        box-sizing: border-box;
+        flex: 0 0 auto;
+        transition:
+            width 0.2s ease-in-out,
+            padding-right 0.2s ease-in-out,
+            background-color 0.2s ease-in-out,
+            border-color 0.2s ease-in-out;
+    }
+
+    .gui-volume-shell:hover,
+    .gui-volume-shell:focus-within {
+        width: 124px;
+        padding-right: 10px;
+        background-color: rgba(34, 34, 34, 0.94);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .gui-volume-button {
+        flex: 0 0 var(--player-utility-button-size);
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .gui-volume-slider {
+        width: 0;
+        opacity: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        overflow: hidden;
+        transition:
+            width 0.2s ease-in-out,
+            opacity 0.15s ease-in-out;
+    }
+
+    .gui-volume-shell:hover .gui-volume-slider,
+    .gui-volume-shell:focus-within .gui-volume-slider {
+        width: 66px;
+        opacity: 1;
+    }
+
+    .rotated-icon {
+        transform: rotate(180deg);
+    }
+
+    .play-icon {
+        width: 0;
+        height: 0;
+        margin-left: 5px;
+        border-top: 12px solid transparent;
+        border-bottom: 12px solid transparent;
+        border-left: 18px solid currentColor;
+    }
+
+    .pause-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .pause-icon span {
+        width: 8px;
+        height: 28px;
+        border-radius: 999px;
+        background-color: currentColor;
+    }
+
+    .volume-symbol {
+        color: currentColor;
     }
 
     .volume-input {
         appearance: none;
-        width: 100px;
+        width: 100%;
         height: 6px;
         border-radius: 9999px;
         background: linear-gradient(90deg, #ffffff var(--volume-position, 0), #5a5a5a var(--volume-position, 0));
@@ -805,5 +1175,60 @@
         border-radius: 9999px;
         background: #f0f0f0;
         box-shadow: none;
+    }
+
+    @keyframes play-loader-rotation {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @media (max-width: 960px) {
+        .gui-top-bar {
+            padding: 18px 16px 0;
+        }
+
+        .gui-dropdown-left {
+            top: 72px;
+        }
+
+        .gui-release-episode {
+            max-width: 100%;
+        }
+
+        .gui-play-button {
+            width: 62px;
+            height: 62px;
+        }
+
+        .pause-icon span {
+            height: 24px;
+        }
+
+        .gui-side-button {
+            width: 36px;
+            height: 36px;
+        }
+
+        .bottom-status-row {
+            gap: 10px;
+        }
+
+        .bottom-secondary-actions {
+            gap: 4px;
+        }
+
+        .gui-volume-shell:hover,
+        .gui-volume-shell:focus-within {
+            width: 114px;
+        }
+
+        .gui-volume-shell:hover .gui-volume-slider,
+        .gui-volume-shell:focus-within .gui-volume-slider {
+            width: 56px;
+        }
     }
 </style>
