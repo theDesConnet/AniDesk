@@ -90,6 +90,7 @@
 
     let isHidden,
         isPaused,
+        isMuted,
         isTimePosClick,
         isFullscreen,
         isPictureInPictureAvailable = false,
@@ -350,12 +351,29 @@
     });
 
     async function playVideo(episode) {
+        if (!episode) return;
+
+        if (
+            video &&
+            currentEpisode &&
+            currentEpisode.position !== episode.position &&
+            !video.paused
+        ) {
+            video.pause();
+        }
+
+        loading = true;
+        currentEpisode = episode;
+        args.currentEpisode = episode;
+
         let avaliableQuality, link;
         let source =
             typeof episode.source == "number"
                 ? args.episodes.find((x) => episode.source == x.source["@id"])
-                      .source
+                      ?.source
                 : episode.source;
+
+        if (!source) return;
 
         rememberPlaybackSelection(source);
 
@@ -432,12 +450,12 @@
             anixApi.release.markEpisodeAsWatched(
                 args.release.id,
                 args.episodes[0].source.id,
-                currentEpisode.position,
+                episode.position,
             );
             anixApi.release.addToHistory(
                 args.release.id,
                 args.episodes[0].source.id,
-                currentEpisode.position,
+                episode.position,
             );
         }
 
@@ -509,6 +527,7 @@
         const qualitySrc = args.avaliableQuality[String(quality)]?.src;
         if (!qualitySrc) return;
 
+        loading = true;
         const url = URL.canParse(qualitySrc)
             ? qualitySrc
             : `https:${qualitySrc}`;
@@ -567,6 +586,7 @@
         }
 
         video.volume = getInitialVolume();
+        isMuted = video.muted;
 
         volControl = await waitForElm("#volume-position");
 
@@ -593,6 +613,7 @@
         };
 
         video.onvolumechange = () => {
+            isMuted = video.muted;
             syncVolumeUI(video.volume);
             syncPersistedVolume();
         };
@@ -885,13 +906,13 @@
         {togglePictureInPicture}
         {isPictureInPictureAvailable}
         {isPictureInPictureActive}
+        {isMuted}
+        isLoading={loading}
         aspectRatio={utils.aspectRatioValues.find(
             (x) => x.value == playerSettings.defaultAspectRatio,
         ).label}
         bind:volumePercent={volPercent}
     />
-
-    <span class:hide={!loading} class="loader"></span>
 
     {#if isPictureInPictureActive}
         <div class="pip-placeholder flex-column">
@@ -932,31 +953,6 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-    }
-
-    .loader {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 30px;
-        height: 30px;
-        border: 3px solid var(--player-timeline-progress-color);
-        border-bottom-color: transparent;
-        border-radius: 50%;
-        display: inline-block;
-        box-sizing: border-box;
-        animation: rotation 1s linear infinite;
-        z-index: 1;
-    }
-
-    @keyframes rotation {
-        0% {
-            transform: translate(-50%, -50%) rotate(0deg);
-        }
-        100% {
-            transform: translate(-50%, -50%) rotate(360deg);
-        }
     }
 
     canvas,
