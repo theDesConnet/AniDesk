@@ -28,7 +28,7 @@
         <div class="developers flex-column">
             <div class="developer flex-row">
                 <img
-                    src="https://github.com/theDesConnet.png"
+                    src="https://avatars.githubusercontent.com/u/31757032?v=4"
                     width="100px"
                     alt="icon"
                 />
@@ -54,20 +54,20 @@
             </div>
             <div class="developer flex-row">
                 <img
-                    src="https://github.com/hack1exe.png"
+                    src="https://avatars.githubusercontent.com/u/85732368?v=4"
                     width="100px"
                     alt="icon"
                 />
                 <div class="dev-info">
                     <span class="developer-name"
-                        >Michail Electronshik (aka Hack1exe)</span
+                        >Mikhail Electronshik (aka axiomsound)</span
                     >
                     <span class="developer-role">Разработчик</span>
                     <div class="social-links">
                         <button
                             onclick={() => {
                                 winApi.openLink(
-                                    `https://github.com/hack1exe`,
+                                    `https://github.com/axiomsound`,
                                 );
                             }}
                         >
