@@ -7,6 +7,7 @@ module.exports = {
     asar: true,
     appBundleId: "com.ds1nc.anidesk",
     name: "AniDesk",
+    executableName: "anidesk",
     appCopyright: "DesConnet, hack1exe",
     icon: "icon/icon",
   },
